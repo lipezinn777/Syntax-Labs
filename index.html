@@ -1,0 +1,887 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Syntax Labs - Plataforma de Ensino de Programação</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+</head>
+<body data-theme="dark">
+    <div class="tech-bg"></div>
+    <div class="grid-pattern"></div>
+
+    <header>
+        <a href="#" class="logo">SYNTAX LABS</a>
+        <nav>
+            <a href="#inicio" class="nav-link active" data-tab="inicio"><i class="fas fa-home"></i> INÍCIO</a>
+            <a href="#aprendizados" class="nav-link" data-tab="aprendizados"><i class="fas fa-chart-line"></i> APRENDIZADOS</a>
+            <a href="#programacao" class="nav-link" data-tab="programacao"><i class="fas fa-code"></i> PROGRAMAÇÃO</a>
+            <a href="#relatorios" class="nav-link" data-tab="relatorios"><i class="fas fa-chart-bar"></i> RELATÓRIOS</a>
+            <a href="#ranking" class="nav-link" data-tab="ranking"><i class="fas fa-trophy"></i> RANKING</a>
+            <a href="#perfil" class="nav-link" data-tab="perfil"><i class="fas fa-user"></i> PERFIL</a>
+            <a href="#sobre" class="nav-link" data-tab="sobre"><i class="fas fa-info-circle"></i> SOBRE</a>
+        </nav>
+        <div class="header-actions">
+            <button class="login-btn" id="headerLoginBtn"><i class="fas fa-sign-in-alt"></i> ENTRAR</button>
+            <button class="theme-toggle" id="themeToggle">☀️</button>
+        </div>
+    </header>
+
+    <main class="main-content">
+        <!-- Aba Início -->
+        <section id="inicio" class="tab-content active">
+            <div class="hero-section">
+                <h1 class="glow">SYNTAX LABS</h1>
+                <p>Aprenda programação de forma interativa e prática. Domine as linguagens mais demandadas do mercado com nossa plataforma inteligente.</p>
+                <button id="joinButton" class="pulse">COMEÇAR AGORA</button>
+            </div>
+
+            <section class="features">
+                <div class="feature-card">
+                    <i class="fas fa-laptop-code"></i>
+                    <h3>EDITOR INTEGRADO</h3>
+                    <p>Programe diretamente no navegador com nosso editor inteligente com syntax highlighting e auto-complete.</p>
+                </div>
+                <div class="feature-card">
+                    <i class="fas fa-layer-group"></i>
+                    <h3>11 LINGUAGENS</h3>
+                    <p>JavaScript, Python, HTML, CSS, Java, PHP, C++, MySQL, Node.js, Lua e Assembly.</p>
+                </div>
+                <div class="feature-card">
+                    <i class="fas fa-chart-bar"></i>
+                    <h3>RELATÓRIOS DETALHADOS</h3>
+                    <p>Acompanhe seu progresso com relatórios completos e análises de desempenho.</p>
+                </div>
+            </section>
+
+            <div class="stats-section">
+                <div class="stats-container">
+                    <div class="stat-item">
+                        <h3>+15K</h3>
+                        <p>Estudantes Ativos</p>
+                    </div>
+                    <div class="stat-item">
+                        <h3>+750</h3>
+                        <p>Exercícios Práticos</p>
+                    </div>
+                    <div class="stat-item">
+                        <h3>+80</h3>
+                        <p>Projetos Reais</p>
+                    </div>
+                    <div class="stat-item">
+                        <h3>24/7</h3>
+                        <p>Suporte Disponível</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Aba Aprendizados -->
+        <section id="aprendizados" class="tab-content">
+            <div class="tab-header">
+                <h2><i class="fas fa-chart-line"></i> Meu Progresso</h2>
+                <p>Acompanhe sua evolução e conquistas</p>
+            </div>
+
+            <div class="progress-grid">
+                <div class="progress-card">
+                    <h3><i class="fas fa-trophy"></i> Nível Atual</h3>
+                    <div class="level-display">
+                        <span class="level">5</span>
+                        <div class="level-progress">
+                            <div class="progress-bar">
+                                <div class="progress" style="width: 65%"></div>
+                            </div>
+                            <span>65% para o nível 6</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="progress-card">
+                    <h3><i class="fas fa-check-circle"></i> Conquistas</h3>
+                    <div class="achievements">
+                        <div class="achievement">
+                            <i class="fas fa-code achievement-icon"></i>
+                            <span>Primeiro Programa</span>
+                        </div>
+                        <div class="achievement">
+                            <i class="fas fa-bug achievement-icon"></i>
+                            <span>Caçador de Bugs</span>
+                        </div>
+                        <div class="achievement">
+                            <i class="fas fa-rocket achievement-icon"></i>
+                            <span>Programador Jr</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="progress-card full-width">
+                    <h3><i class="fas fa-history"></i> Atividade Recente</h3>
+                    <div class="activity-list">
+                        <div class="activity-item">
+                            <i class="fas fa-check success"></i>
+                            <span>Desafio JavaScript concluído</span>
+                            <small>Hoje, 14:30</small>
+                        </div>
+                        <div class="activity-item">
+                            <i class="fas fa-play warning"></i>
+                            <span>Iniciou curso Python</span>
+                            <small>Ontem, 09:15</small>
+                        </div>
+                        <div class="activity-item">
+                            <i class="fas fa-trophy primary"></i>
+                            <span>Alcançou nível 5</span>
+                            <small>2 dias atrás</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Aba Programação AVANÇADA -->
+        <section id="programacao" class="tab-content">
+            <div class="tab-header">
+                <h2><i class="fas fa-code"></i> Ambiente de Programação Avançado</h2>
+                <p>Escolha uma linguagem e experimente com nosso editor inteligente</p>
+            </div>
+
+            <div class="programming-container">
+                <!-- Seletor de Linguagens -->
+                <div class="language-selector">
+                    <h3><i class="fas fa-list"></i> Linguagens Disponíveis</h3>
+                    <div class="languages-grid" id="languagesGrid">
+                        <!-- Linguagens carregadas via JavaScript -->
+                    </div>
+                </div>
+
+                <!-- Ambiente de Desenvolvimento Integrado -->
+                <div class="advanced-ide-container" id="advancedIdeContainer" style="display: none;">
+                    <div class="ide-header">
+                        <div class="ide-title">
+                            <h3 id="currentLanguage">JavaScript</h3>
+                            <span class="file-status" id="fileStatus">💾 Salvo</span>
+                        </div>
+                        <div class="ide-actions">
+                            <button class="btn-run" id="runButton">
+                                <i class="fas fa-play"></i> Executar
+                            </button>
+                            <button class="btn-save" id="saveButton">
+                                <i class="fas fa-save"></i> Salvar
+                            </button>
+                            <button class="btn-clear" id="clearButton">
+                                <i class="fas fa-broom"></i> Limpar
+                            </button>
+                            <button class="btn-ai" id="aiHelpButton">
+                                <i class="fas fa-robot"></i> Ajuda da IA
+                            </button>
+                            <button class="btn-report" id="generateReportBtn">
+                                <i class="fas fa-chart-bar"></i> Relatório
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div class="ide-content-advanced">
+                        <!-- Editor de Código -->
+                        <div class="editor-container">
+                            <div class="editor-header">
+                                <span>📝 editor.js</span>
+                                <div class="editor-actions">
+                                    <button class="btn-theme" id="editorTheme">
+                                        <i class="fas fa-moon"></i> Tema
+                                    </button>
+                                </div>
+                            </div>
+                            <div class="code-editor-container">
+                                <div class="line-numbers" id="lineNumbers">
+                                    <!-- Números das linhas -->
+                                </div>
+                                <textarea id="advancedCodeEditor" class="advanced-code-editor" placeholder="// Comece a programar...&#10;// A IA irá ajudar com sugestões e correções"></textarea>
+                            </div>
+                            <div class="editor-footer">
+                                <span id="cursorPosition">Linha 1, Coluna 1</span>
+                                <span id="syntaxInfo">JavaScript • UTF-8</span>
+                            </div>
+                        </div>
+
+                        <!-- Painel de Resultados e IA -->
+                        <div class="side-panel">
+                            <!-- Console de Output -->
+                            <div class="output-panel">
+                                <div class="panel-header">
+                                    <h4><i class="fas fa-terminal"></i> Console</h4>
+                                    <button class="btn-clear-console" id="clearConsole">
+                                        <i class="fas fa-trash"></i>
+                                    </button>
+                                </div>
+                                <div class="console-output-advanced" id="advancedConsoleOutput">
+                                    <div class="welcome-message">
+                                        <p>🚀 <strong>Bem-vindo ao Syntax Labs!</strong></p>
+                                        <p>• Escreva código no editor à esquerda</p>
+                                        <p>• Clique em "Executar" para ver os resultados</p>
+                                        <p>• Use "Ajuda da IA" para sugestões inteligentes</p>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Assistente IA -->
+                            <div class="ai-assistant-panel">
+                                <div class="panel-header">
+                                    <h4><i class="fas fa-robot"></i> Assistente IA</h4>
+                                    <div class="ai-status" id="aiStatus">🟢 Online</div>
+                                </div>
+                                <div class="ai-messages" id="aiMessages">
+                                    <div class="ai-message">
+                                        <div class="message-avatar">🤖</div>
+                                        <div class="message-content">
+                                            <p>Olá! Sou seu assistente de programação. Posso ajudar com:</p>
+                                            <ul>
+                                                <li>📝 Correção de erros de sintaxe</li>
+                                                <li>💡 Sugestões de código</li>
+                                                <li>🔍 Explicação de conceitos</li>
+                                                <li>🚀 Dicas de boas práticas</li>
+                                            </ul>
+                                            <p>Escreva seu código e clique no botão de ajuda!</p>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="ai-input-container">
+                                    <input type="text" id="aiQuestion" placeholder="Pergunte algo sobre o código..." class="ai-input">
+                                    <button class="btn-send-ai" id="sendAiQuestion">
+                                        <i class="fas fa-paper-plane"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Desafios e Exemplos -->
+                    <div class="challenges-section-advanced">
+                        <div class="challenges-header">
+                            <h4><i class="fas fa-puzzle-piece"></i> Desafios e Exemplos</h4>
+                            <div class="difficulty-filter">
+                                <select id="difficultyFilter">
+                                    <option value="all">Todas as Dificuldades</option>
+                                    <option value="iniciante">Iniciante</option>
+                                    <option value="intermediario">Intermediário</option>
+                                    <option value="avancado">Avançado</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="challenges-grid" id="challengesGrid">
+                            <!-- Desafios carregados dinamicamente -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Aba Relatórios -->
+        <section id="relatorios" class="tab-content">
+            <div class="tab-header">
+                <h2><i class="fas fa-chart-bar"></i> Relatórios de Progresso</h2>
+                <p>Analise seu desempenho e evolução na programação</p>
+            </div>
+
+            <div class="reports-container">
+                <div class="reports-header">
+                    <div class="report-filters">
+                        <select id="reportPeriod">
+                            <option value="7">Últimos 7 dias</option>
+                            <option value="30">Últimos 30 dias</option>
+                            <option value="90">Últimos 3 meses</option>
+                            <option value="365">Último ano</option>
+                        </select>
+                        <select id="reportType">
+                            <option value="overview">Visão Geral</option>
+                            <option value="languages">Por Linguagem</option>
+                            <option value="challenges">Desafios</option>
+                            <option value="time">Tempo de Estudo</option>
+                        </select>
+                        <button class="btn-generate-report" id="generateFullReport">
+                            <i class="fas fa-download"></i> Gerar Relatório
+                        </button>
+                    </div>
+                </div>
+
+                <div class="reports-grid">
+                    <!-- Cartão de Estatísticas Gerais -->
+                    <div class="report-card full-width">
+                        <h3><i class="fas fa-chart-pie"></i> Estatísticas Gerais</h3>
+                        <div class="stats-grid">
+                            <div class="stat-box">
+                                <div class="stat-icon">
+                                    <i class="fas fa-code"></i>
+                                </div>
+                                <div class="stat-info">
+                                    <h4>1,250</h4>
+                                    <p>Linhas de Código</p>
+                                </div>
+                            </div>
+                            <div class="stat-box">
+                                <div class="stat-icon">
+                                    <i class="fas fa-check-circle"></i>
+                                </div>
+                                <div class="stat-info">
+                                    <h4>24</h4>
+                                    <p>Desafios Concluídos</p>
+                                </div>
+                            </div>
+                            <div class="stat-box">
+                                <div class="stat-icon">
+                                    <i class="fas fa-clock"></i>
+                                </div>
+                                <div class="stat-info">
+                                    <h4>45h</h4>
+                                    <p>Tempo de Estudo</p>
+                                </div>
+                            </div>
+                            <div class="stat-box">
+                                <div class="stat-icon">
+                                    <i class="fas fa-trophy"></i>
+                                </div>
+                                <div class="stat-info">
+                                    <h4>5</h4>
+                                    <p>Nível Atual</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Gráfico de Progresso por Linguagem -->
+                    <div class="report-card">
+                        <h3><i class="fas fa-language"></i> Progresso por Linguagem</h3>
+                        <div class="chart-container">
+                            <canvas id="languageProgressChart"></canvas>
+                        </div>
+                    </div>
+
+                    <!-- Atividade Recente -->
+                    <div class="report-card">
+                        <h3><i class="fas fa-history"></i> Atividade Diária</h3>
+                        <div class="chart-container">
+                            <canvas id="dailyActivityChart"></canvas>
+                        </div>
+                    </div>
+
+                    <!-- Desempenho em Desafios -->
+                    <div class="report-card">
+                        <h3><i class="fas fa-puzzle-piece"></i> Desempenho em Desafios</h3>
+                        <div class="challenge-stats">
+                            <div class="challenge-stat">
+                                <span class="stat-label">Taxa de Sucesso</span>
+                                <div class="stat-bar">
+                                    <div class="stat-progress" style="width: 85%"></div>
+                                </div>
+                                <span class="stat-value">85%</span>
+                            </div>
+                            <div class="challenge-stat">
+                                <span class="stat-label">Tempo Médio</span>
+                                <div class="stat-bar">
+                                    <div class="stat-progress" style="width: 70%"></div>
+                                </div>
+                                <span class="stat-value">12min</span>
+                            </div>
+                            <div class="challenge-stat">
+                                <span class="stat-label">Complexidade</span>
+                                <div class="stat-bar">
+                                    <div class="stat-progress" style="width: 60%"></div>
+                                </div>
+                                <span class="stat-value">Média</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Linha do Tempo de Conquistas -->
+                    <div class="report-card full-width">
+                        <h3><i class="fas fa-medal"></i> Linha do Tempo de Conquistas</h3>
+                        <div class="timeline">
+                            <div class="timeline-item">
+                                <div class="timeline-date">Hoje</div>
+                                <div class="timeline-content">
+                                    <i class="fas fa-code success"></i>
+                                    <div>
+                                        <h4>Desafio JavaScript Concluído</h4>
+                                        <p>Calculadora avançada com 95% de eficiência</p>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="timeline-item">
+                                <div class="timeline-date">Ontem</div>
+                                <div class="timeline-content">
+                                    <i class="fas fa-rocket warning"></i>
+                                    <div>
+                                        <h4>Novo Projeto Iniciado</h4>
+                                        <p>Desenvolvimento de aplicação web completa</p>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="timeline-item">
+                                <div class="timeline-date">2 dias atrás</div>
+                                <div class="timeline-content">
+                                    <i class="fas fa-trophy primary"></i>
+                                    <div>
+                                        <h4>Nível 5 Alcançado</h4>
+                                        <p>Progresso significativo na carreira</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Recomendações -->
+                    <div class="report-card full-width">
+                        <h3><i class="fas fa-lightbulb"></i> Recomendações Personalizadas</h3>
+                        <div class="recommendations">
+                            <div class="recommendation">
+                                <i class="fas fa-arrow-up success"></i>
+                                <div>
+                                    <h4>Pratique Mais Python</h4>
+                                    <p>Seu desempenho em Python está 15% abaixo da média</p>
+                                </div>
+                            </div>
+                            <div class="recommendation">
+                                <i class="fas fa-clock warning"></i>
+                                <div>
+                                    <h4>Estude em Horários Fixos</h4>
+                                    <p>Consistência melhora a retenção em 40%</p>
+                                </div>
+                            </div>
+                            <div class="recommendation">
+                                <i class="fas fa-project-diagram primary"></i>
+                                <div>
+                                    <h4>Explore Projetos Práticos</h4>
+                                    <p>Aplicação prática reforça o aprendizado</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Aba Ranking -->
+        <section id="ranking" class="tab-content">
+            <div class="tab-header">
+                <h2><i class="fas fa-trophy"></i> Ranking da Comunidade</h2>
+                <p>Veja sua posição entre os programadores</p>
+            </div>
+
+            <div class="ranking-container">
+                <div class="ranking-filters">
+                    <button class="filter-btn active">Geral</button>
+                    <button class="filter-btn">JavaScript</button>
+                    <button class="filter-btn">Python</button>
+                    <button class="filter-btn">Semanal</button>
+                </div>
+
+                <div class="ranking-list" id="rankingList">
+                    <!-- Ranking será carregado via JavaScript -->
+                </div>
+
+                <div class="user-position">
+                    <h3>Sua Posição</h3>
+                    <div class="position-card">
+                        <span class="rank">42º</span>
+                        <div class="user-info">
+                            <strong>Você</strong>
+                            <span>1,250 pontos</span>
+                        </div>
+                        <div class="progress-bar">
+                            <div class="progress" style="width: 68%"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Aba Perfil -->
+        <section id="perfil" class="tab-content">
+            <div class="tab-header">
+                <h2><i class="fas fa-user"></i> Meu Perfil</h2>
+                <p>Gerencie suas informações e configurações</p>
+            </div>
+
+            <div class="profile-container">
+                <!-- Header do Perfil -->
+                <div class="profile-header">
+                    <div class="profile-avatar">
+                        <div class="avatar-circle" id="userAvatar">
+                            <i class="fas fa-user"></i>
+                        </div>
+                        <button class="edit-avatar-btn" onclick="app.changeAvatar()">
+                            <i class="fas fa-camera"></i>
+                        </button>
+                    </div>
+                    <div class="profile-info">
+                        <h3 id="profileUserName">Carregando...</h3>
+                        <p id="profileUserEmail">carregando@email.com</p>
+                        <div class="profile-badges">
+                            <span class="badge" id="profileLevel">Nível 1</span>
+                            <span class="badge" id="profileRole">Estudante</span>
+                        </div>
+                    </div>
+                    <div class="profile-stats">
+                        <div class="stat">
+                            <span class="stat-number" id="profilePoints">0</span>
+                            <span class="stat-label">Pontos</span>
+                        </div>
+                        <div class="stat">
+                            <span class="stat-number" id="profileChallenges">0</span>
+                            <span class="stat-label">Desafios</span>
+                        </div>
+                        <div class="stat">
+                            <span class="stat-number" id="profileLanguages">0</span>
+                            <span class="stat-label">Linguagens</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Conteúdo do Perfil -->
+                <div class="profile-content">
+                    <!-- Informações Pessoais -->
+                    <div class="profile-section">
+                        <h3><i class="fas fa-info-circle"></i> Informações Pessoais</h3>
+                        <div class="info-grid">
+                            <div class="info-item">
+                                <label>Nome Completo</label>
+                                <input type="text" id="profileName" class="profile-input" readonly>
+                                <button class="edit-btn" onclick="app.editField('profileName')">
+                                    <i class="fas fa-edit"></i>
+                                </button>
+                            </div>
+                            <div class="info-item">
+                                <label>E-mail</label>
+                                <input type="email" id="profileEmail" class="profile-input" readonly>
+                                <button class="edit-btn" onclick="app.editField('profileEmail')">
+                                    <i class="fas fa-edit"></i>
+                                </button>
+                            </div>
+                            <div class="info-item">
+                                <label>Data de Cadastro</label>
+                                <input type="text" id="profileJoinDate" class="profile-input" readonly>
+                            </div>
+                            <div class="info-item">
+                                <label>Perfil</label>
+                                <input type="text" id="profileType" class="profile-input" readonly>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Progresso e Estatísticas -->
+                    <div class="profile-section">
+                        <h3><i class="fas fa-chart-line"></i> Progresso e Estatísticas</h3>
+                        <div class="stats-grid">
+                            <div class="stat-card">
+                                <i class="fas fa-code"></i>
+                                <div class="stat-info">
+                                    <h4 id="statLines">0</h4>
+                                    <p>Linhas de Código</p>
+                                </div>
+                            </div>
+                            <div class="stat-card">
+                                <i class="fas fa-clock"></i>
+                                <div class="stat-info">
+                                    <h4 id="statHours">0h</h4>
+                                    <p>Horas de Estudo</p>
+                                </div>
+                            </div>
+                            <div class="stat-card">
+                                <i class="fas fa-trophy"></i>
+                                <div class="stat-info">
+                                    <h4 id="statCompleted">0%</h4>
+                                    <p>Conclusão</p>
+                                </div>
+                            </div>
+                            <div class="stat-card">
+                                <i class="fas fa-medal"></i>
+                                <div class="stat-info">
+                                    <h4 id="statRank">-</h4>
+                                    <p>Ranking Global</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Linguagens Dominadas -->
+                    <div class="profile-section">
+                        <h3><i class="fas fa-language"></i> Linguagens Dominadas</h3>
+                        <div class="languages-grid" id="profileLanguagesGrid">
+                            <!-- Linguagens serão carregadas via JavaScript -->
+                        </div>
+                    </div>
+
+                    <!-- Configurações -->
+                    <div class="profile-section">
+                        <h3><i class="fas fa-cog"></i> Configurações</h3>
+                        <div class="settings-grid">
+                            <div class="setting-item">
+                                <div class="setting-info">
+                                    <h4>Notificações por E-mail</h4>
+                                    <p>Receba atualizações sobre seu progresso</p>
+                                </div>
+                                <label class="switch">
+                                    <input type="checkbox" id="emailNotifications" checked>
+                                    <span class="slider"></span>
+                                </label>
+                            </div>
+                            <div class="setting-item">
+                                <div class="setting-info">
+                                    <h4>Modo Escuro</h4>
+                                    <p>Interface com tema escuro</p>
+                                </div>
+                                <label class="switch">
+                                    <input type="checkbox" id="darkMode">
+                                    <span class="slider"></span>
+                                </label>
+                            </div>
+                            <div class="setting-item">
+                                <div class="setting-info">
+                                    <h4>Ajuda da IA</h4>
+                                    <p>Sugestões automáticas de código</p>
+                                </div>
+                                <label class="switch">
+                                    <input type="checkbox" id="aiAssistance" checked>
+                                    <span class="slider"></span>
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Ações da Conta -->
+                    <div class="profile-section">
+                        <h3><i class="fas fa-shield-alt"></i> Ações da Conta</h3>
+                        <div class="actions-grid">
+                            <button class="action-btn primary" onclick="app.exportData()">
+                                <i class="fas fa-download"></i> Exportar Dados
+                            </button>
+                            <button class="action-btn warning" onclick="app.resetProgress()">
+                                <i class="fas fa-redo"></i> Reiniciar Progresso
+                            </button>
+                            <button class="action-btn danger" onclick="app.deleteAccount()">
+                                <i class="fas fa-trash"></i> Excluir Conta
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Aba Sobre -->
+        <section id="sobre" class="tab-content">
+            <div class="tab-header">
+                <h2><i class="fas fa-info-circle"></i> Sobre o Syntax Labs</h2>
+                <p>Conheça nossa missão e tecnologia</p>
+            </div>
+
+            <div class="about-container">
+                <div class="about-section">
+                    <h3><i class="fas fa-bullseye"></i> Nossa Missão</h3>
+                    <p>Democratizar o ensino de programação, tornando-o acessível, engaging e eficaz para todos que desejam transformar suas carreiras através da tecnologia.</p>
+                </div>
+
+                <div class="about-section">
+                    <h3><i class="fas fa-rocket"></i> Tecnologias</h3>
+                    <div class="tech-stack">
+                        <div class="tech-item">
+                            <i class="fab fa-html5"></i>
+                            <span>HTML5</span>
+                        </div>
+                        <div class="tech-item">
+                            <i class="fab fa-css3-alt"></i>
+                            <span>CSS3</span>
+                        </div>
+                        <div class="tech-item">
+                            <i class="fab fa-js"></i>
+                            <span>JavaScript</span>
+                        </div>
+                        <div class="tech-item">
+                            <i class="fab fa-python"></i>
+                            <span>Python</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <footer>
+        <p>Syntax Labs &copy; 2025 - Transformando desenvolvedores em experts</p>
+        <div class="footer-links">
+            <a href="#"><i class="fab fa-github"></i></a>
+            <a href="#"><i class="fab fa-linkedin"></i></a>
+            <a href="#"><i class="fab fa-twitter"></i></a>
+        </div>
+    </footer>
+
+    <!-- Modal de seleção de perfil -->
+    <div class="modal" id="profileModal">
+        <div class="modal-content">
+            <span class="close-modal" id="closeModal">&times;</span>
+            <h2 class="modal-title">Escolha seu Perfil</h2>
+            <div class="profile-options">
+                <div class="profile-option" data-profile="estudante">
+                    <i class="fas fa-user-graduate"></i>
+                    <h3>ESTUDANTE</h3>
+                    <p>Comece sua jornada na programação com cursos interativos</p>
+                </div>
+                <div class="profile-option" data-profile="profissional">
+                    <i class="fas fa-briefcase"></i>
+                    <h3>PROFISSIONAL</h3>
+                    <p>Aprimore suas skills e aprenda novas tecnologias</p>
+                </div>
+                <div class="profile-option" data-profile="empresa">
+                    <i class="fas fa-building"></i>
+                    <h3>EMPRESA</h3>
+                    <p>Capacite sua equipe com nossos planos corporativos</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Páginas de Login/Cadastro -->
+    <div class="login-page" id="estudanteLogin">
+        <div class="login-content">
+            <span class="close-modal" onclick="app.closeLoginPage('estudanteLogin')">&times;</span>
+            <h2 class="login-title">Login do Estudante</h2>
+            <p class="login-subtitle">Continue sua jornada de aprendizado</p>
+            
+            <form class="login-form" id="estudanteLoginForm">
+                <div class="form-group">
+                    <label for="estudante-email"><i class="fas fa-envelope"></i> E-mail</label>
+                    <input type="email" id="estudante-email" name="email" placeholder="seu@email.com" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="estudante-password"><i class="fas fa-lock"></i> Senha</label>
+                    <input type="password" id="estudante-password" name="password" placeholder="Sua senha" required>
+                </div>
+                
+                <button type="submit" class="login-button">ENTRAR NA PLATAFORMA</button>
+            </form>
+            
+            <button class="toggle-form" onclick="app.showRegisterForm('estudante')">
+                Primeira vez aqui? Cadastre-se
+            </button>
+            
+            <button class="back-button" onclick="app.closeLoginPage('estudanteLogin')">
+                <i class="fas fa-arrow-left"></i> Voltar
+            </button>
+        </div>
+    </div>
+
+    <div class="login-page" id="estudanteRegister">
+        <div class="login-content">
+            <span class="close-modal" onclick="app.closeLoginPage('estudanteRegister')">&times;</span>
+            <h2 class="login-title">Cadastro de Estudante</h2>
+            <p class="login-subtitle">Comece sua jornada na programação</p>
+            
+            <form class="login-form" id="estudanteRegisterForm">
+                <div class="form-group">
+                    <label for="estudante-register-name"><i class="fas fa-user"></i> Nome Completo</label>
+                    <input type="text" id="estudante-register-name" name="name" placeholder="Seu nome completo" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="estudante-register-email"><i class="fas fa-envelope"></i> E-mail</label>
+                    <input type="email" id="estudante-register-email" name="email" placeholder="seu@email.com" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="estudante-register-password"><i class="fas fa-lock"></i> Senha</label>
+                    <input type="password" id="estudante-register-password" name="password" placeholder="Crie uma senha segura" required minlength="6">
+                </div>
+                
+                <div class="form-group">
+                    <label for="estudante-register-confirm-password"><i class="fas fa-lock"></i> Confirmar Senha</label>
+                    <input type="password" id="estudante-register-confirm-password" name="confirmPassword" placeholder="Digite novamente sua senha" required>
+                </div>
+                
+                <button type="submit" class="login-button">CRIAR CONTA</button>
+            </form>
+            
+            <button class="toggle-form" onclick="app.showLoginForm('estudante')">
+                Já tem uma conta? Faça login
+            </button>
+            
+            <button class="back-button" onclick="app.closeLoginPage('estudanteRegister')">
+                <i class="fas fa-arrow-left"></i> Voltar
+            </button>
+        </div>
+    </div>
+
+    <!-- Modal de Relatório -->
+    <div class="modal" id="reportModal">
+        <div class="modal-content large">
+            <span class="close-modal" onclick="app.closeReportModal()">&times;</span>
+            <h2 class="modal-title">Relatório de Progresso</h2>
+            <div class="report-content" id="reportContent">
+                <!-- Conteúdo do relatório será gerado aqui -->
+            </div>
+            <div class="report-actions">
+                <button class="btn-print" onclick="app.printReport()">
+                    <i class="fas fa-print"></i> Imprimir
+                </button>
+                <button class="btn-download" onclick="app.downloadReport()">
+                    <i class="fas fa-download"></i> Baixar PDF
+                </button>
+            </div>
+        </div>
+    </div>
+
+<!-- Adicionar antes do fechamento do body -->
+<div class="ide-controls-sidebar" id="ideControlsSidebar">
+    <button class="control-btn run" data-tooltip="Executar Código (Ctrl+Enter)" onclick="advancedProgrammingSystem.runCode()">
+        <i class="fas fa-play"></i>
+    </button>
+    <button class="control-btn save" data-tooltip="Salvar Código (Ctrl+S)" onclick="advancedProgrammingSystem.saveCode()">
+        <i class="fas fa-save"></i>
+    </button>
+    <button class="control-btn clear" data-tooltip="Limpar Editor" onclick="advancedProgrammingSystem.clearCode()">
+        <i class="fas fa-broom"></i>
+    </button>
+    <button class="control-btn ai" data-tooltip="Ajuda da IA" onclick="advancedProgrammingSystem.getAIHelp()">
+        <i class="fas fa-robot"></i>
+    </button>
+    <button class="control-btn report" data-tooltip="Gerar Relatório" onclick="app.generateCodeReport()">
+        <i class="fas fa-chart-bar"></i>
+    </button>
+    <button class="control-btn theme" data-tooltip="Alternar Tema" onclick="advancedProgrammingSystem.toggleEditorTheme()">
+        <i class="fas fa-moon"></i>
+    </button>
+</div>
+
+<div class="scroll-indicator" id="scrollIndicator" onclick="advancedProgrammingSystem.scrollToTop()">
+    <i class="fas fa-chevron-up"></i>
+</div>
+
+<div class="ide-controls-sidebar" id="ideControlsSidebar">
+    <button class="control-btn run" data-tooltip="Executar Código (Ctrl+Enter)" onclick="advancedProgrammingSystem.runCode()">
+        <i class="fas fa-play"></i>
+    </button>
+    <button class="control-btn save" data-tooltip="Salvar Código (Ctrl+S)" onclick="advancedProgrammingSystem.saveCode()">
+        <i class="fas fa-save"></i>
+    </button>
+    <button class="control-btn clear" data-tooltip="Limpar Editor" onclick="advancedProgrammingSystem.clearCode()">
+        <i class="fas fa-broom"></i>
+    </button>
+    <button class="control-btn ai" data-tooltip="Ajuda da IA" onclick="advancedProgrammingSystem.getAIHelp()">
+        <i class="fas fa-robot"></i>
+    </button>
+    <button class="control-btn report" data-tooltip="Gerar Relatório" onclick="app.generateCodeReport()">
+        <i class="fas fa-chart-bar"></i>
+    </button>
+    <button class="control-btn theme" data-tooltip="Alternar Tema" onclick="advancedProgrammingSystem.toggleEditorTheme()">
+        <i class="fas fa-moon"></i>
+    </button>
+</div>
+
+<div class="scroll-indicator" id="scrollIndicator" onclick="advancedProgrammingSystem.scrollToTop()">
+    <i class="fas fa-chevron-up"></i>
+</div>
+
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="script.js"></script>
+</body>
+</html>
