@@ -8,11 +8,8 @@ class SyntaxLabsApp {
         this.theme = localStorage.getItem('theme') || 'dark';
         this.userProgress = this.loadUserProgress();
         
-        // Sistema de autenticação
-        this.pendingUser = null;
-        this.verificationCode = null;
-        this.codeExpiration = null;
-        this.countdownInterval = null;
+        // Sistema de autenticação SIMPLIFICADO (sem verificação por email)
+        this.authToken = localStorage.getItem('authToken');
         
         this.init();
     }
@@ -480,7 +477,7 @@ class SyntaxLabsApp {
         }
     }
 
-    // ===== SISTEMA DE AUTENTICAÇÃO COM VERIFICAÇÃO POR E-MAIL =====
+    // ===== SISTEMA DE AUTENTICAÇÃO SIMPLIFICADO (SEM VERIFICAÇÃO POR EMAIL) =====
 
     async handleRegister(profileType) {
         const formData = this.getFormData(profileType + 'RegisterForm');
@@ -501,304 +498,20 @@ class SyntaxLabsApp {
 
     async performRegistration(profileType, data) {
         try {
-            this.showLoading('Enviando código de verificação...');
+            this.showLoading('Criando sua conta...');
             
-            // Simular envio de e-mail (em produção, isso seria uma API real)
-            await this.sendVerificationEmail(data.email);
+            // Simular processamento
+            await new Promise(resolve => setTimeout(resolve, 1000));
             
-            this.hideLoading();
-            
-            // Salvar dados temporários do usuário
-            this.pendingUser = {
-                profileType: profileType,
-                userData: data,
-                timestamp: Date.now()
-            };
-            
-            // Mostrar modal de verificação
-            this.showEmailVerificationModal(data.email);
-            
-        } catch (error) {
-            this.hideLoading();
-            this.showAlert('Erro ao enviar código de verificação. Tente novamente.', 'error');
-        }
-    }
-
-    async sendVerificationEmail(email) {
-        return new Promise((resolve) => {
-            setTimeout(() => {
-                // Gerar código de 6 dígitos
-                this.verificationCode = Math.floor(100000 + Math.random() * 900000).toString();
-                this.codeExpiration = Date.now() + 5 * 60 * 1000; // 5 minutos
-                
-                // Em produção, aqui você faria uma requisição para seu backend
-                console.log(`Código de verificação para ${email}: ${this.verificationCode}`);
-                
-                // Simular envio de e-mail
-                this.simulateEmailSending(email, this.verificationCode);
-                
-                resolve();
-            }, 2000);
-        });
-    }
-
-    simulateEmailSending(email, code) {
-        // Em desenvolvimento, mostre o código de forma mais visível
-        console.log('🔐 CÓDIGO DE VERIFICAÇÃO (DESENVOLVIMENTO):', code);
-        console.log('E-mail simulado para:', email);
-        
-        // Mostrar alerta bem visível com o código
-        this.showDevelopmentCodeAlert(code, email);
-    }
-
-    showDevelopmentCodeAlert(code, email) {
-        // Criar um alerta especial para desenvolvimento
-        const devAlert = document.createElement('div');
-        devAlert.className = 'dev-alert';
-        devAlert.innerHTML = `
-            <div class="dev-alert-content">
-                <h3>🚨 MODO DESENVOLVIMENTO</h3>
-                <p><strong>E-mail simulado para:</strong> ${email}</p>
-                <div class="dev-code">
-                    <strong>CÓDIGO DE VERIFICAÇÃO:</strong>
-                    <span class="code-display">${code}</span>
-                </div>
-                <p><small>Em produção, este código seria enviado por e-mail</small></p>
-                <button onclick="this.parentElement.parentElement.remove()">Fechar</button>
-            </div>
-        `;
-        
-        devAlert.style.cssText = `
-            position: fixed;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            background: #ffeb3b;
-            border: 3px solid #ff9800;
-            border-radius: 10px;
-            padding: 0;
-            z-index: 10000;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
-            font-family: Arial, sans-serif;
-        `;
-        
-        document.body.appendChild(devAlert);
-    }
-
-    showEmailVerificationModal(email) {
-        const modal = document.getElementById('emailVerificationModal');
-        const emailElement = document.getElementById('verificationEmail');
-        
-        if (modal && emailElement) {
-            emailElement.textContent = email;
-            modal.style.display = 'flex';
-            document.body.classList.add('modal-open');
-            
-            // Configurar inputs do código
-            this.setupCodeInputs();
-            
-            // Iniciar contagem regressiva
-            this.startCountdown();
-        }
-    }
-
-    closeEmailVerificationModal() {
-        const modal = document.getElementById('emailVerificationModal');
-        if (modal) {
-            modal.style.display = 'none';
-            document.body.classList.remove('modal-open');
-            
-            // Limpar intervalos
-            if (this.countdownInterval) {
-                clearInterval(this.countdownInterval);
-            }
-            
-            // Resetar estado
-            this.pendingUser = null;
-            this.verificationCode = null;
-            this.codeExpiration = null;
-        }
-    }
-
-    setupCodeInputs() {
-        const codeInputs = document.querySelectorAll('.code-input');
-        const verifyBtn = document.getElementById('verifyBtn');
-        
-        codeInputs.forEach((input, index) => {
-            // Limpar event listeners anteriores
-            input.replaceWith(input.cloneNode(true));
-        });
-
-        // Re-selecionar os inputs após o clone
-        const freshInputs = document.querySelectorAll('.code-input');
-        
-        freshInputs.forEach((input, index) => {
-            input.addEventListener('input', (e) => {
-                const value = e.target.value;
-                
-                // Permitir apenas números
-                if (!/^\d*$/.test(value)) {
-                    e.target.value = '';
-                    return;
-                }
-                
-                if (value.length === 1 && index < freshInputs.length - 1) {
-                    freshInputs[index + 1].focus();
-                }
-                
-                // Verificar se todos os campos estão preenchidos
-                this.checkCodeCompletion();
-            });
-            
-            input.addEventListener('keydown', (e) => {
-                if (e.key === 'Backspace' && !e.target.value && index > 0) {
-                    freshInputs[index - 1].focus();
-                }
-            });
-            
-            input.addEventListener('paste', (e) => {
-                e.preventDefault();
-                const pasteData = e.clipboardData.getData('text').slice(0, 6);
-                
-                if (/^\d{6}$/.test(pasteData)) {
-                    pasteData.split('').forEach((digit, digitIndex) => {
-                        if (freshInputs[digitIndex]) {
-                            freshInputs[digitIndex].value = digit;
-                            freshInputs[digitIndex].classList.add('filled');
-                        }
-                    });
-                    
-                    if (freshInputs[5]) {
-                        freshInputs[5].focus();
-                    }
-                    
-                    this.checkCodeCompletion();
-                }
-            });
-        });
-        
-        // Focar no primeiro input
-        if (freshInputs[0]) {
-            freshInputs[0].focus();
-        }
-    }
-
-    checkCodeCompletion() {
-        const codeInputs = document.querySelectorAll('.code-input');
-        const verifyBtn = document.getElementById('verifyBtn');
-        const allFilled = Array.from(codeInputs).every(input => input.value.length === 1);
-        
-        if (verifyBtn) {
-            verifyBtn.disabled = !allFilled;
-        }
-    }
-
-    startCountdown() {
-        const countdownElement = document.getElementById('countdown');
-        const resendBtn = document.getElementById('resendBtn');
-        
-        if (this.countdownInterval) {
-            clearInterval(this.countdownInterval);
-        }
-        
-        this.countdownInterval = setInterval(() => {
-            const now = Date.now();
-            const timeLeft = this.codeExpiration - now;
-            
-            if (timeLeft <= 0) {
-                clearInterval(this.countdownInterval);
-                countdownElement.textContent = '00:00';
-                countdownElement.style.color = 'var(--error-color)';
-                
-                if (resendBtn) {
-                    resendBtn.disabled = false;
-                }
-                
-                return;
-            }
-            
-            const minutes = Math.floor(timeLeft / 60000);
-            const seconds = Math.floor((timeLeft % 60000) / 1000);
-            
-            countdownElement.textContent = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
-            
-            if (resendBtn) {
-                resendBtn.disabled = true;
-            }
-            
-        }, 1000);
-    }
-
-    async verifyCode() {
-        const codeInputs = document.querySelectorAll('.code-input');
-        const enteredCode = Array.from(codeInputs).map(input => input.value).join('');
-        const verifyBtn = document.getElementById('verifyBtn');
-        const errorElement = document.getElementById('verificationError');
-        
-        if (!this.verificationCode) {
-            this.showError('Código expirado. Solicite um novo código.');
-            return;
-        }
-        
-        if (Date.now() > this.codeExpiration) {
-            this.showError('Código expirado. Solicite um novo código.');
-            return;
-        }
-        
-        // Mostrar loading
-        verifyBtn.classList.add('loading');
-        verifyBtn.disabled = true;
-        
-        // Simular verificação
-        await new Promise(resolve => setTimeout(resolve, 1000));
-        
-        if (enteredCode === this.verificationCode) {
-            // Código correto - completar cadastro
-            await this.completeRegistration();
-        } else {
-            // Código incorreto
-            this.showError('Código inválido. Tente novamente.');
-            
-            // Limpar inputs
-            codeInputs.forEach(input => {
-                input.value = '';
-                input.classList.remove('filled');
-            });
-            
-            // Focar no primeiro input
-            if (codeInputs[0]) {
-                codeInputs[0].focus();
-            }
-        }
-        
-        verifyBtn.classList.remove('loading');
-        this.checkCodeCompletion();
-    }
-
-    async completeRegistration() {
-        if (!this.pendingUser) {
-            this.showError('Erro ao processar registro.');
-            return;
-        }
-        
-        const { profileType, userData } = this.pendingUser;
-        
-        try {
-            console.log('Completando cadastro para:', userData.email);
-            
-            // Salvar usuário no banco de dados local
-            const existingUsers = JSON.parse(localStorage.getItem('registeredUsers') || '{}');
-            
-            // ⚠️ CORREÇÃO: Garantir que o e-mail seja a chave correta
-            const userEmail = userData.email.toLowerCase().trim(); // Normalizar e-mail
-            
-            existingUsers[userEmail] = {
-                id: Date.now(),
-                name: userData.name,
-                email: userEmail, // Usar e-mail normalizado
-                password: userData.password,
+            // Criar usuário diretamente (SEM verificação por email)
+            const userId = Date.now();
+            const userData = {
+                id: userId,
+                name: data.name,
+                email: data.email.toLowerCase().trim(),
+                password: data.password, // ⚠️ Em produção, criptografe!
                 profile: profileType,
-                verified: true,
+                verified: true, // ✅ Diretamente verificado
                 createdAt: new Date().toISOString(),
                 lastLogin: new Date().toISOString(),
                 // Dados de progresso inicial
@@ -806,33 +519,31 @@ class SyntaxLabsApp {
                 points: 0,
                 challengesCompleted: 0,
                 linesOfCode: 0,
-                studyTime: 0
+                studyTime: 0,
+                achievements: []
             };
             
-            console.log('Salvando usuário:', existingUsers[userEmail]);
-            
+            // Salvar usuário
+            const existingUsers = JSON.parse(localStorage.getItem('registeredUsers') || '{}');
+            existingUsers[userData.email] = userData;
             localStorage.setItem('registeredUsers', JSON.stringify(existingUsers));
             
-            // ⚠️ IMPORTANTE: Verificar se salvou corretamente
-            const verifyUsers = JSON.parse(localStorage.getItem('registeredUsers') || '{}');
-            console.log('Verificação - Usuário salvo:', verifyUsers[userEmail] ? 'SIM' : 'NÃO');
+            // Login automático
+            this.currentUser = userData;
+            this.authToken = 'token-' + userId;
             
-            // Fechar modal de verificação
-            this.closeEmailVerificationModal();
+            localStorage.setItem('currentUser', JSON.stringify(this.currentUser));
+            localStorage.setItem('authToken', this.authToken);
             
-            // Mostrar mensagem de sucesso
-            this.showAlert('🎉 Cadastro realizado com sucesso! Agora faça login.', 'success');
+            this.hideLoading();
+            this.showAlert('🎉 Conta criada com sucesso! Bem-vindo ao Syntax Labs!', 'success');
             
-            // Limpar dados pendentes
-            this.pendingUser = null;
-            this.verificationCode = null;
-            
-            // Mostrar formulário de login
-            this.showLoginForm(profileType);
+            this.closeAllModals();
+            this.updateUIAfterLogin();
             
         } catch (error) {
-            console.error('Erro no completeRegistration:', error);
-            this.showError('Erro ao completar cadastro. Tente novamente.');
+            this.hideLoading();
+            this.showAlert('Erro ao criar conta: ' + error.message, 'error');
         }
     }
 
@@ -843,24 +554,6 @@ class SyntaxLabsApp {
             return;
         }
 
-        // ⚠️ CORREÇÃO: Normalizar e-mail na verificação também
-        const userEmail = formData.email.toLowerCase().trim();
-        
-        // Verificar se é um usuário cadastrado ANTES de tentar login
-        const existingUsers = JSON.parse(localStorage.getItem('registeredUsers') || '{}');
-        const user = existingUsers[userEmail];
-        
-        console.log('🔍 Verificando usuário:', userEmail);
-        console.log('📋 Usuários existentes:', Object.keys(existingUsers));
-        
-        if (!user) {
-            this.showAlert('❌ Usuário não cadastrado. Por favor, faça o cadastro primeiro.', 'error');
-            
-            // Mostrar debug no console
-            this.debugUserSystem();
-            return;
-        }
-
         await this.performLogin(profileType, formData);
     }
 
@@ -868,10 +561,10 @@ class SyntaxLabsApp {
         try {
             this.showLoading('Verificando credenciais...');
             
-            // ⚠️ CORREÇÃO: Normalizar o e-mail na busca também
-            const userEmail = data.email.toLowerCase().trim();
+            // Simular verificação
+            await new Promise(resolve => setTimeout(resolve, 800));
             
-            // Verificar no banco de dados de usuários registrados
+            const userEmail = data.email.toLowerCase().trim();
             const existingUsers = JSON.parse(localStorage.getItem('registeredUsers') || '{}');
             const user = existingUsers[userEmail];
             
@@ -879,40 +572,28 @@ class SyntaxLabsApp {
             console.log('Usuários disponíveis:', Object.keys(existingUsers));
             
             if (!user) {
-                // Debug: mostrar quais usuários existem
-                this.debugUserSystem();
                 throw new Error('Usuário não encontrado. Faça o cadastro primeiro.');
             }
             
-            // Verificar se o e-mail foi verificado
-            if (!user.verified) {
-                // Se não foi verificado, reenviar código
-                this.pendingUser = {
-                    profileType: profileType,
-                    userData: data,
-                    timestamp: Date.now()
-                };
-                
-                await this.sendVerificationEmail(data.email);
-                this.showEmailVerificationModal(data.email);
-                this.hideLoading();
-                this.showAlert('E-mail não verificado. Enviamos um novo código de verificação.', 'warning');
-                return;
-            }
-            
-            // ⚠️ CORREÇÃO: Comparação de senha
+            // ⚠️ CORREÇÃO: Comparação de senha (em produção use bcrypt)
             if (user.password !== data.password) {
                 throw new Error('Senha incorreta.');
             }
             
             // Login bem-sucedido
             this.currentUser = user;
+            this.authToken = 'token-' + user.id;
+            
+            // Atualizar último login
+            user.lastLogin = new Date().toISOString();
+            existingUsers[userEmail] = user;
+            localStorage.setItem('registeredUsers', JSON.stringify(existingUsers));
             
             localStorage.setItem('currentUser', JSON.stringify(this.currentUser));
-            localStorage.setItem('authToken', 'simulated-token');
+            localStorage.setItem('authToken', this.authToken);
             
             this.hideLoading();
-            this.showAlert('Login realizado com sucesso! 🎉', 'success');
+            this.showAlert(`Bem-vindo de volta, ${this.currentUser.name}! 🎉`, 'success');
             
             this.closeLoginPage(profileType + 'Login');
             this.updateUIAfterLogin();
@@ -921,83 +602,6 @@ class SyntaxLabsApp {
             this.hideLoading();
             this.showAlert(error.message, 'error');
         }
-    }
-
-    async resendVerificationCode() {
-        if (!this.pendingUser) {
-            return;
-        }
-        
-        const resendBtn = document.getElementById('resendBtn');
-        const errorElement = document.getElementById('verificationError');
-        
-        // Mostrar loading
-        resendBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Enviando...';
-        resendBtn.disabled = true;
-        
-        try {
-            await this.sendVerificationEmail(this.pendingUser.userData.email);
-            
-            // Esconder erro se existir
-            if (errorElement) {
-                errorElement.style.display = 'none';
-            }
-            
-            this.showAlert('✅ Código reenviado com sucesso!', 'success');
-            
-            // Reiniciar contagem
-            this.startCountdown();
-            
-        } catch (error) {
-            this.showError('Erro ao reenviar código. Tente novamente.');
-        } finally {
-            resendBtn.innerHTML = '<i class="fas fa-redo"></i> Reenviar Código';
-            this.checkCodeCompletion();
-        }
-    }
-
-    showError(message) {
-        const errorElement = document.getElementById('verificationError');
-        const errorMessage = document.getElementById('errorMessage');
-        
-        if (errorElement && errorMessage) {
-            errorMessage.textContent = message;
-            errorElement.style.display = 'flex';
-        }
-    }
-
-    // Método para debug do sistema de usuários
-    debugUserSystem() {
-        console.log('=== DEBUG SISTEMA DE USUÁRIOS ===');
-        const users = JSON.parse(localStorage.getItem('registeredUsers') || '{}');
-        
-        console.log('Usuários no localStorage:', users);
-        console.log('Chaves dos usuários:', Object.keys(users));
-        
-        if (this.pendingUser) {
-            console.log('Usuário pendente:', this.pendingUser.userData.email);
-        }
-        
-        // Verificar se o usuário foi salvo corretamente
-        Object.keys(users).forEach(email => {
-            console.log(`Usuário ${email}:`, users[email]);
-        });
-    }
-
-    // Método para ver todos os usuários cadastrados (apenas desenvolvimento)
-    viewRegisteredUsers() {
-        const users = JSON.parse(localStorage.getItem('registeredUsers') || '{}');
-        
-        console.log('=== USUÁRIOS CADASTRADOS ===');
-        if (Object.keys(users).length === 0) {
-            console.log('Nenhum usuário cadastrado');
-            return;
-        }
-        
-        Object.keys(users).forEach(email => {
-            const user = users[email];
-            console.log(`📧 ${email} | 👤 ${user.name} | ✅ ${user.verified ? 'Verificado' : 'Não verificado'}`);
-        });
     }
 
     getFormData(formId) {
@@ -1058,26 +662,6 @@ class SyntaxLabsApp {
     isValidEmail(email) {
         const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
         return emailRegex.test(email);
-    }
-
-    getProfileSpecificData(profileType) {
-        const specificData = {
-            profissional: {
-                level: 'Pleno',
-                points: 2000,
-                specialty: 'Fullstack'
-            },
-            empresa: {
-                plan: 'Corporate',
-                employees: '51-200'
-            },
-            estudante: {
-                level: 5,
-                points: 1250
-            }
-        };
-        
-        return specificData[profileType] || {};
     }
 
     showLoginForm(profileType) {
@@ -1415,6 +999,7 @@ class SyntaxLabsApp {
     logout() {
         if (confirm('Tem certeza que deseja sair?')) {
             this.currentUser = null;
+            this.authToken = null;
             localStorage.removeItem('currentUser');
             localStorage.removeItem('authToken');
             
@@ -2119,6 +1704,11 @@ class SyntaxLabsApp {
     }
 
     updateProfileUI() {
+        if (!this.currentUser) {
+            this.showDemoProfile();
+            return;
+        }
+
         // Informações básicas
         document.getElementById('profileUserName').textContent = this.currentUser.name;
         document.getElementById('profileUserEmail').textContent = this.currentUser.email;
@@ -2127,7 +1717,7 @@ class SyntaxLabsApp {
         document.getElementById('profileType').value = this.currentUser.profile.charAt(0).toUpperCase() + this.currentUser.profile.slice(1);
         
         // Data de cadastro
-        const joinDate = new Date(this.currentUser.id).toLocaleDateString('pt-BR');
+        const joinDate = new Date(this.currentUser.createdAt).toLocaleDateString('pt-BR');
         document.getElementById('profileJoinDate').value = joinDate;
         
         // Estatísticas
@@ -2294,6 +1884,11 @@ class SyntaxLabsApp {
     deleteAccount() {
         if (confirm('ATENÇÃO: Esta ação irá excluir permanentemente sua conta e todos os dados. Tem certeza?')) {
             if (confirm('Digite "EXCLUIR" para confirmar:') === 'EXCLUIR') {
+                // Remover usuário do localStorage
+                const existingUsers = JSON.parse(localStorage.getItem('registeredUsers') || '{}');
+                delete existingUsers[this.currentUser.email];
+                localStorage.setItem('registeredUsers', JSON.stringify(existingUsers));
+                
                 this.logout();
                 localStorage.removeItem('userProgress');
                 localStorage.removeItem('userSettings');
@@ -2349,10 +1944,12 @@ class SyntaxLabsApp {
 
     showLoading(message = 'Carregando...') {
         console.log('Loading:', message);
+        // Implementar spinner visual se necessário
     }
 
     hideLoading() {
         console.log('Loading complete');
+        // Ocultar spinner visual se implementado
     }
 
     // Efeitos Visuais
@@ -2387,6 +1984,7 @@ class SyntaxLabsApp {
 }
 
 // ===== SISTEMA DE PROGRAMAÇÃO AVANÇADO =====
+// (Mantido igual ao seu código original)
 
 class AdvancedProgrammingSystem {
     constructor(app) {
@@ -3489,17 +3087,39 @@ document.addEventListener('DOMContentLoaded', function() {
             const users = JSON.parse(localStorage.getItem('registeredUsers') || '{}');
             const currentUser = JSON.parse(localStorage.getItem('currentUser') || 'null');
             
-            console.log('🔐 Status do Sistema:');
+            console.log('🔐 Status do Sistema (SEM verificação por e-mail):');
             console.log('- Usuários cadastrados:', Object.keys(users).length);
-            console.log('- Usuário logado:', currentUser ? currentUser.email : 'Nenhum');
+            console.log('- Usuário logado:', currentUser ? currentUser.name : 'Nenhum');
+            
+            // Adicionar comandos de debug ao console
+            window.debugAuth = {
+                viewUsers: () => {
+                    const users = JSON.parse(localStorage.getItem('registeredUsers') || '{}');
+                    console.log('=== USUÁRIOS CADASTRADOS ===');
+                    Object.keys(users).forEach(email => {
+                        const user = users[email];
+                        console.log(`📧 ${email} | 👤 ${user.name} | 🎯 ${user.profile}`);
+                    });
+                },
+                clearUsers: () => {
+                    if (confirm('Apagar TODOS os usuários?')) {
+                        localStorage.removeItem('registeredUsers');
+                        localStorage.removeItem('currentUser');
+                        localStorage.removeItem('authToken');
+                        location.reload();
+                    }
+                }
+            };
+            console.log('🔧 Comandos de debug: debugAuth.viewUsers(), debugAuth.clearUsers()');
+            
         } catch (error) {
-            console.log('⚠️ Sistema de autenticação ainda não inicializado');
+            console.log('⚠️ Sistema de autenticação em inicialização');
         }
         
-        // Inicializar aplicação principal
+        // Inicializar aplicação
         if (typeof SyntaxLabsApp === 'function') {
             window.app = new SyntaxLabsApp();
-            console.log('✅ Aplicação Syntax Labs carregada!');
+            console.log('✅ Syntax Labs carregada! Sistema SEM verificação por e-mail.');
         } else {
             console.error('❌ Erro: SyntaxLabsApp não encontrada');
         }
@@ -3512,14 +3132,5 @@ window.openChatBot = function() {
         window.app.showAlert('Chatbot em desenvolvimento! 🤖', 'info');
     } else {
         alert('Chatbot em desenvolvimento! 🤖');
-    }
-};
-
-// Função para debug (apenas desenvolvimento)
-window.showUsers = () => {
-    if (window.app && typeof window.app.viewRegisteredUsers === 'function') {
-        window.app.viewRegisteredUsers();
-    } else {
-        console.log('App não inicializada');
     }
 };
