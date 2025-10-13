@@ -8,6 +8,12 @@ class SyntaxLabsApp {
         this.theme = localStorage.getItem('theme') || 'dark';
         this.userProgress = this.loadUserProgress();
         
+        // Sistema de autenticação
+        this.pendingUser = null;
+        this.verificationCode = null;
+        this.codeExpiration = null;
+        this.countdownInterval = null;
+        
         this.init();
     }
 
@@ -176,6 +182,9 @@ class SyntaxLabsApp {
     onTabChange(tabId) {
         console.log('Aba alterada para:', tabId);
         
+        // ✅ REMOVIDO: Verificação de login para abas protegidas
+        // As pessoas podem visualizar todas as abas sem cadastro
+        
         switch(tabId) {
             case 'programacao':
                 this.initializeProgrammingSystem();
@@ -202,10 +211,14 @@ class SyntaxLabsApp {
     }
 
     initializeProgrammingSystem() {
+        // ✅ REMOVIDO: Verificação de login
+        // Qualquer pessoa pode acessar o ambiente de programação
+        
         if (!window.advancedProgrammingSystem) {
             window.advancedProgrammingSystem = new AdvancedProgrammingSystem(this);
         }
-        // Carregar linguagens baseado no status do usuário
+        
+        // Carregar linguagens (usuário não logado verá apenas as básicas)
         window.advancedProgrammingSystem.loadLanguages(this.currentUser);
     }
 
@@ -467,162 +480,524 @@ class SyntaxLabsApp {
         }
     }
 
-   async handleLogin(profileType) {
-    const formData = this.getFormData(profileType + 'LoginForm');
-    
-    if (!this.validateLoginForm(formData)) {
-        return;
-    }
+    // ===== SISTEMA DE AUTENTICAÇÃO COM VERIFICAÇÃO POR E-MAIL =====
 
-    // Verificar se é um usuário cadastrado ANTES de tentar login
-    const existingUsers = JSON.parse(localStorage.getItem('registeredUsers') || '{}');
-    const user = existingUsers[formData.email];
-    
-    if (!user) {
-        this.showAlert('❌ Usuário não cadastrado. Por favor, faça o cadastro primeiro.', 'error');
-        return;
-    }
-
-    await this.performLogin(profileType, formData);
-}
-// Método para verificar se um usuário existe
-checkUserExists(email) {
-    const existingUsers = JSON.parse(localStorage.getItem('registeredUsers') || '{}');
-    return !!existingUsers[email];
-}
-
-// Método para obter usuário
-getUserByEmail(email) {
-    const existingUsers = JSON.parse(localStorage.getItem('registeredUsers') || '{}');
-    return existingUsers[email];
-}
-async completeRegistration() {
-    if (!this.pendingUser) {
-        this.showError('Erro ao processar registro.');
-        return;
-    }
-    
-    const { profileType, userData } = this.pendingUser;
-    
-    try {
-        // Salvar usuário no banco de dados local
-        const existingUsers = JSON.parse(localStorage.getItem('registeredUsers') || '{}');
-        
-        existingUsers[userData.email] = {
-            id: Date.now(),
-            name: userData.name,
-            email: userData.email,
-            password: userData.password,
-            profile: profileType,
-            verified: true,
-            createdAt: new Date().toISOString(),
-            lastLogin: new Date().toISOString(),
-            // Dados de progresso inicial
-            progress: {
-                level: 1,
-                points: 0,
-                challengesCompleted: 0,
-                linesOfCode: 0,
-                studyTime: 0,
-                languages: {}
-            }
-        };
-        
-        localStorage.setItem('registeredUsers', JSON.stringify(existingUsers));
-        
-        // Fechar modal de verificação
-        this.closeEmailVerificationModal();
-        
-        // Mostrar mensagem de sucesso
-        this.showAlert('🎉 Cadastro realizado com sucesso! Agora faça login.', 'success');
-        
-        // Limpar formulário de cadastro
-        this.clearRegisterForm(profileType);
-        
-        // Mostrar formulário de login
-        this.showLoginForm(profileType);
-        
-    } catch (error) {
-        this.showError('Erro ao completar cadastro. Tente novamente.');
-    }
-}
-
-// Método para limpar formulário de cadastro
-clearRegisterForm(profileType) {
-    const form = document.getElementById(profileType + 'RegisterForm');
-    if (form) {
-        form.reset();
-    }
-}
-onTabChange(tabId) {
-    console.log('Aba alterada para:', tabId);
-    
-    // Verificar se o usuário está logado para abas protegidas
-    const protectedTabs = ['aprendizados', 'programacao', 'relatorios', 'ranking', 'perfil'];
-    
-    if (protectedTabs.includes(tabId) && !this.currentUser) {
-        this.showAlert('🔒 Faça login para acessar esta funcionalidade.', 'warning');
-        this.switchTab('inicio');
-        return;
-    }
-    
-    switch(tabId) {
-        case 'programacao':
-            this.initializeProgrammingSystem();
-            break;
-        case 'ranking':
-            this.loadRanking();
-            break;
-        case 'aprendizados':
-            this.loadProgressData();
-            break;
-        case 'relatorios':
-            this.loadReportsData();
-            break;
-        case 'perfil':
-            this.loadProfileData();
-            break;
-        case 'sobre':
-            this.loadAboutData();
-            break;
-        case 'inicio':
-            this.createCodeAnimation();
-            break;
-    }
-}
-initializeProgrammingSystem() {
-    if (!this.currentUser) {
-        this.showAlert('🔒 Faça login para acessar o ambiente de programação.', 'warning');
-        this.switchTab('inicio');
-        return;
-    }
-    
-    if (!window.advancedProgrammingSystem) {
-        window.advancedProgrammingSystem = new AdvancedProgrammingSystem(this);
-    }
-    // Carregar linguagens baseado no status do usuário
-    window.advancedProgrammingSystem.loadLanguages(this.currentUser);
-}
-// Método para limpar dados de teste (apenas desenvolvimento)
-clearTestData() {
-    if (confirm('Limpar todos os dados de teste?')) {
-        localStorage.removeItem('registeredUsers');
-        localStorage.removeItem('currentUser');
-        localStorage.removeItem('authToken');
-        this.currentUser = null;
-        this.showAlert('Dados de teste limpos!', 'info');
-        location.reload();
-    }
-}
-
-    handleRegister(profileType) {
+    async handleRegister(profileType) {
         const formData = this.getFormData(profileType + 'RegisterForm');
         
         if (!this.validateRegisterForm(formData)) {
             return;
         }
 
-        this.performRegister(profileType, formData);
+        // Verificar se o usuário já existe
+        const existingUsers = JSON.parse(localStorage.getItem('registeredUsers') || '{}');
+        if (existingUsers[formData.email]) {
+            this.showAlert('Este e-mail já está cadastrado.', 'error');
+            return;
+        }
+
+        await this.performRegistration(profileType, formData);
+    }
+
+    async performRegistration(profileType, data) {
+        try {
+            this.showLoading('Enviando código de verificação...');
+            
+            // Simular envio de e-mail (em produção, isso seria uma API real)
+            await this.sendVerificationEmail(data.email);
+            
+            this.hideLoading();
+            
+            // Salvar dados temporários do usuário
+            this.pendingUser = {
+                profileType: profileType,
+                userData: data,
+                timestamp: Date.now()
+            };
+            
+            // Mostrar modal de verificação
+            this.showEmailVerificationModal(data.email);
+            
+        } catch (error) {
+            this.hideLoading();
+            this.showAlert('Erro ao enviar código de verificação. Tente novamente.', 'error');
+        }
+    }
+
+    async sendVerificationEmail(email) {
+        return new Promise((resolve) => {
+            setTimeout(() => {
+                // Gerar código de 6 dígitos
+                this.verificationCode = Math.floor(100000 + Math.random() * 900000).toString();
+                this.codeExpiration = Date.now() + 5 * 60 * 1000; // 5 minutos
+                
+                // Em produção, aqui você faria uma requisição para seu backend
+                console.log(`Código de verificação para ${email}: ${this.verificationCode}`);
+                
+                // Simular envio de e-mail
+                this.simulateEmailSending(email, this.verificationCode);
+                
+                resolve();
+            }, 2000);
+        });
+    }
+
+    simulateEmailSending(email, code) {
+        // Em desenvolvimento, mostre o código de forma mais visível
+        console.log('🔐 CÓDIGO DE VERIFICAÇÃO (DESENVOLVIMENTO):', code);
+        console.log('E-mail simulado para:', email);
+        
+        // Mostrar alerta bem visível com o código
+        this.showDevelopmentCodeAlert(code, email);
+    }
+
+    showDevelopmentCodeAlert(code, email) {
+        // Criar um alerta especial para desenvolvimento
+        const devAlert = document.createElement('div');
+        devAlert.className = 'dev-alert';
+        devAlert.innerHTML = `
+            <div class="dev-alert-content">
+                <h3>🚨 MODO DESENVOLVIMENTO</h3>
+                <p><strong>E-mail simulado para:</strong> ${email}</p>
+                <div class="dev-code">
+                    <strong>CÓDIGO DE VERIFICAÇÃO:</strong>
+                    <span class="code-display">${code}</span>
+                </div>
+                <p><small>Em produção, este código seria enviado por e-mail</small></p>
+                <button onclick="this.parentElement.parentElement.remove()">Fechar</button>
+            </div>
+        `;
+        
+        devAlert.style.cssText = `
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: #ffeb3b;
+            border: 3px solid #ff9800;
+            border-radius: 10px;
+            padding: 0;
+            z-index: 10000;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+            font-family: Arial, sans-serif;
+        `;
+        
+        document.body.appendChild(devAlert);
+    }
+
+    showEmailVerificationModal(email) {
+        const modal = document.getElementById('emailVerificationModal');
+        const emailElement = document.getElementById('verificationEmail');
+        
+        if (modal && emailElement) {
+            emailElement.textContent = email;
+            modal.style.display = 'flex';
+            document.body.classList.add('modal-open');
+            
+            // Configurar inputs do código
+            this.setupCodeInputs();
+            
+            // Iniciar contagem regressiva
+            this.startCountdown();
+        }
+    }
+
+    closeEmailVerificationModal() {
+        const modal = document.getElementById('emailVerificationModal');
+        if (modal) {
+            modal.style.display = 'none';
+            document.body.classList.remove('modal-open');
+            
+            // Limpar intervalos
+            if (this.countdownInterval) {
+                clearInterval(this.countdownInterval);
+            }
+            
+            // Resetar estado
+            this.pendingUser = null;
+            this.verificationCode = null;
+            this.codeExpiration = null;
+        }
+    }
+
+    setupCodeInputs() {
+        const codeInputs = document.querySelectorAll('.code-input');
+        const verifyBtn = document.getElementById('verifyBtn');
+        
+        codeInputs.forEach((input, index) => {
+            // Limpar event listeners anteriores
+            input.replaceWith(input.cloneNode(true));
+        });
+
+        // Re-selecionar os inputs após o clone
+        const freshInputs = document.querySelectorAll('.code-input');
+        
+        freshInputs.forEach((input, index) => {
+            input.addEventListener('input', (e) => {
+                const value = e.target.value;
+                
+                // Permitir apenas números
+                if (!/^\d*$/.test(value)) {
+                    e.target.value = '';
+                    return;
+                }
+                
+                if (value.length === 1 && index < freshInputs.length - 1) {
+                    freshInputs[index + 1].focus();
+                }
+                
+                // Verificar se todos os campos estão preenchidos
+                this.checkCodeCompletion();
+            });
+            
+            input.addEventListener('keydown', (e) => {
+                if (e.key === 'Backspace' && !e.target.value && index > 0) {
+                    freshInputs[index - 1].focus();
+                }
+            });
+            
+            input.addEventListener('paste', (e) => {
+                e.preventDefault();
+                const pasteData = e.clipboardData.getData('text').slice(0, 6);
+                
+                if (/^\d{6}$/.test(pasteData)) {
+                    pasteData.split('').forEach((digit, digitIndex) => {
+                        if (freshInputs[digitIndex]) {
+                            freshInputs[digitIndex].value = digit;
+                            freshInputs[digitIndex].classList.add('filled');
+                        }
+                    });
+                    
+                    if (freshInputs[5]) {
+                        freshInputs[5].focus();
+                    }
+                    
+                    this.checkCodeCompletion();
+                }
+            });
+        });
+        
+        // Focar no primeiro input
+        if (freshInputs[0]) {
+            freshInputs[0].focus();
+        }
+    }
+
+    checkCodeCompletion() {
+        const codeInputs = document.querySelectorAll('.code-input');
+        const verifyBtn = document.getElementById('verifyBtn');
+        const allFilled = Array.from(codeInputs).every(input => input.value.length === 1);
+        
+        if (verifyBtn) {
+            verifyBtn.disabled = !allFilled;
+        }
+    }
+
+    startCountdown() {
+        const countdownElement = document.getElementById('countdown');
+        const resendBtn = document.getElementById('resendBtn');
+        
+        if (this.countdownInterval) {
+            clearInterval(this.countdownInterval);
+        }
+        
+        this.countdownInterval = setInterval(() => {
+            const now = Date.now();
+            const timeLeft = this.codeExpiration - now;
+            
+            if (timeLeft <= 0) {
+                clearInterval(this.countdownInterval);
+                countdownElement.textContent = '00:00';
+                countdownElement.style.color = 'var(--error-color)';
+                
+                if (resendBtn) {
+                    resendBtn.disabled = false;
+                }
+                
+                return;
+            }
+            
+            const minutes = Math.floor(timeLeft / 60000);
+            const seconds = Math.floor((timeLeft % 60000) / 1000);
+            
+            countdownElement.textContent = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+            
+            if (resendBtn) {
+                resendBtn.disabled = true;
+            }
+            
+        }, 1000);
+    }
+
+    async verifyCode() {
+        const codeInputs = document.querySelectorAll('.code-input');
+        const enteredCode = Array.from(codeInputs).map(input => input.value).join('');
+        const verifyBtn = document.getElementById('verifyBtn');
+        const errorElement = document.getElementById('verificationError');
+        
+        if (!this.verificationCode) {
+            this.showError('Código expirado. Solicite um novo código.');
+            return;
+        }
+        
+        if (Date.now() > this.codeExpiration) {
+            this.showError('Código expirado. Solicite um novo código.');
+            return;
+        }
+        
+        // Mostrar loading
+        verifyBtn.classList.add('loading');
+        verifyBtn.disabled = true;
+        
+        // Simular verificação
+        await new Promise(resolve => setTimeout(resolve, 1000));
+        
+        if (enteredCode === this.verificationCode) {
+            // Código correto - completar cadastro
+            await this.completeRegistration();
+        } else {
+            // Código incorreto
+            this.showError('Código inválido. Tente novamente.');
+            
+            // Limpar inputs
+            codeInputs.forEach(input => {
+                input.value = '';
+                input.classList.remove('filled');
+            });
+            
+            // Focar no primeiro input
+            if (codeInputs[0]) {
+                codeInputs[0].focus();
+            }
+        }
+        
+        verifyBtn.classList.remove('loading');
+        this.checkCodeCompletion();
+    }
+
+    async completeRegistration() {
+        if (!this.pendingUser) {
+            this.showError('Erro ao processar registro.');
+            return;
+        }
+        
+        const { profileType, userData } = this.pendingUser;
+        
+        try {
+            console.log('Completando cadastro para:', userData.email);
+            
+            // Salvar usuário no banco de dados local
+            const existingUsers = JSON.parse(localStorage.getItem('registeredUsers') || '{}');
+            
+            // ⚠️ CORREÇÃO: Garantir que o e-mail seja a chave correta
+            const userEmail = userData.email.toLowerCase().trim(); // Normalizar e-mail
+            
+            existingUsers[userEmail] = {
+                id: Date.now(),
+                name: userData.name,
+                email: userEmail, // Usar e-mail normalizado
+                password: userData.password,
+                profile: profileType,
+                verified: true,
+                createdAt: new Date().toISOString(),
+                lastLogin: new Date().toISOString(),
+                // Dados de progresso inicial
+                level: 1,
+                points: 0,
+                challengesCompleted: 0,
+                linesOfCode: 0,
+                studyTime: 0
+            };
+            
+            console.log('Salvando usuário:', existingUsers[userEmail]);
+            
+            localStorage.setItem('registeredUsers', JSON.stringify(existingUsers));
+            
+            // ⚠️ IMPORTANTE: Verificar se salvou corretamente
+            const verifyUsers = JSON.parse(localStorage.getItem('registeredUsers') || '{}');
+            console.log('Verificação - Usuário salvo:', verifyUsers[userEmail] ? 'SIM' : 'NÃO');
+            
+            // Fechar modal de verificação
+            this.closeEmailVerificationModal();
+            
+            // Mostrar mensagem de sucesso
+            this.showAlert('🎉 Cadastro realizado com sucesso! Agora faça login.', 'success');
+            
+            // Limpar dados pendentes
+            this.pendingUser = null;
+            this.verificationCode = null;
+            
+            // Mostrar formulário de login
+            this.showLoginForm(profileType);
+            
+        } catch (error) {
+            console.error('Erro no completeRegistration:', error);
+            this.showError('Erro ao completar cadastro. Tente novamente.');
+        }
+    }
+
+    async handleLogin(profileType) {
+        const formData = this.getFormData(profileType + 'LoginForm');
+        
+        if (!this.validateLoginForm(formData)) {
+            return;
+        }
+
+        // ⚠️ CORREÇÃO: Normalizar e-mail na verificação também
+        const userEmail = formData.email.toLowerCase().trim();
+        
+        // Verificar se é um usuário cadastrado ANTES de tentar login
+        const existingUsers = JSON.parse(localStorage.getItem('registeredUsers') || '{}');
+        const user = existingUsers[userEmail];
+        
+        console.log('🔍 Verificando usuário:', userEmail);
+        console.log('📋 Usuários existentes:', Object.keys(existingUsers));
+        
+        if (!user) {
+            this.showAlert('❌ Usuário não cadastrado. Por favor, faça o cadastro primeiro.', 'error');
+            
+            // Mostrar debug no console
+            this.debugUserSystem();
+            return;
+        }
+
+        await this.performLogin(profileType, formData);
+    }
+
+    async performLogin(profileType, data) {
+        try {
+            this.showLoading('Verificando credenciais...');
+            
+            // ⚠️ CORREÇÃO: Normalizar o e-mail na busca também
+            const userEmail = data.email.toLowerCase().trim();
+            
+            // Verificar no banco de dados de usuários registrados
+            const existingUsers = JSON.parse(localStorage.getItem('registeredUsers') || '{}');
+            const user = existingUsers[userEmail];
+            
+            console.log('Buscando usuário:', userEmail);
+            console.log('Usuários disponíveis:', Object.keys(existingUsers));
+            
+            if (!user) {
+                // Debug: mostrar quais usuários existem
+                this.debugUserSystem();
+                throw new Error('Usuário não encontrado. Faça o cadastro primeiro.');
+            }
+            
+            // Verificar se o e-mail foi verificado
+            if (!user.verified) {
+                // Se não foi verificado, reenviar código
+                this.pendingUser = {
+                    profileType: profileType,
+                    userData: data,
+                    timestamp: Date.now()
+                };
+                
+                await this.sendVerificationEmail(data.email);
+                this.showEmailVerificationModal(data.email);
+                this.hideLoading();
+                this.showAlert('E-mail não verificado. Enviamos um novo código de verificação.', 'warning');
+                return;
+            }
+            
+            // ⚠️ CORREÇÃO: Comparação de senha
+            if (user.password !== data.password) {
+                throw new Error('Senha incorreta.');
+            }
+            
+            // Login bem-sucedido
+            this.currentUser = user;
+            
+            localStorage.setItem('currentUser', JSON.stringify(this.currentUser));
+            localStorage.setItem('authToken', 'simulated-token');
+            
+            this.hideLoading();
+            this.showAlert('Login realizado com sucesso! 🎉', 'success');
+            
+            this.closeLoginPage(profileType + 'Login');
+            this.updateUIAfterLogin();
+            
+        } catch (error) {
+            this.hideLoading();
+            this.showAlert(error.message, 'error');
+        }
+    }
+
+    async resendVerificationCode() {
+        if (!this.pendingUser) {
+            return;
+        }
+        
+        const resendBtn = document.getElementById('resendBtn');
+        const errorElement = document.getElementById('verificationError');
+        
+        // Mostrar loading
+        resendBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Enviando...';
+        resendBtn.disabled = true;
+        
+        try {
+            await this.sendVerificationEmail(this.pendingUser.userData.email);
+            
+            // Esconder erro se existir
+            if (errorElement) {
+                errorElement.style.display = 'none';
+            }
+            
+            this.showAlert('✅ Código reenviado com sucesso!', 'success');
+            
+            // Reiniciar contagem
+            this.startCountdown();
+            
+        } catch (error) {
+            this.showError('Erro ao reenviar código. Tente novamente.');
+        } finally {
+            resendBtn.innerHTML = '<i class="fas fa-redo"></i> Reenviar Código';
+            this.checkCodeCompletion();
+        }
+    }
+
+    showError(message) {
+        const errorElement = document.getElementById('verificationError');
+        const errorMessage = document.getElementById('errorMessage');
+        
+        if (errorElement && errorMessage) {
+            errorMessage.textContent = message;
+            errorElement.style.display = 'flex';
+        }
+    }
+
+    // Método para debug do sistema de usuários
+    debugUserSystem() {
+        console.log('=== DEBUG SISTEMA DE USUÁRIOS ===');
+        const users = JSON.parse(localStorage.getItem('registeredUsers') || '{}');
+        
+        console.log('Usuários no localStorage:', users);
+        console.log('Chaves dos usuários:', Object.keys(users));
+        
+        if (this.pendingUser) {
+            console.log('Usuário pendente:', this.pendingUser.userData.email);
+        }
+        
+        // Verificar se o usuário foi salvo corretamente
+        Object.keys(users).forEach(email => {
+            console.log(`Usuário ${email}:`, users[email]);
+        });
+    }
+
+    // Método para ver todos os usuários cadastrados (apenas desenvolvimento)
+    viewRegisteredUsers() {
+        const users = JSON.parse(localStorage.getItem('registeredUsers') || '{}');
+        
+        console.log('=== USUÁRIOS CADASTRADOS ===');
+        if (Object.keys(users).length === 0) {
+            console.log('Nenhum usuário cadastrado');
+            return;
+        }
+        
+        Object.keys(users).forEach(email => {
+            const user = users[email];
+            console.log(`📧 ${email} | 👤 ${user.name} | ✅ ${user.verified ? 'Verificado' : 'Não verificado'}`);
+        });
     }
 
     getFormData(formId) {
@@ -685,74 +1060,6 @@ clearTestData() {
         return emailRegex.test(email);
     }
 
-   async performLogin(profileType, data) {
-    try {
-        this.showLoading('Verificando credenciais...');
-        
-        // Verificar no banco de dados de usuários registrados
-        const existingUsers = JSON.parse(localStorage.getItem('registeredUsers') || '{}');
-        const user = existingUsers[data.email];
-        
-        if (!user) {
-            throw new Error('Usuário não encontrado. Faça o cadastro primeiro.');
-        }
-        
-        // Verificar se o e-mail foi verificado
-        if (!user.verified) {
-            // Se não foi verificado, reenviar código
-            this.pendingUser = {
-                profileType: profileType,
-                userData: data,
-                timestamp: Date.now()
-            };
-            
-            await this.sendVerificationEmail(data.email);
-            this.showEmailVerificationModal(data.email);
-            this.hideLoading();
-            this.showAlert('E-mail não verificado. Enviamos um novo código de verificação.', 'warning');
-            return;
-        }
-        
-        // Em produção, compare com hash da senha
-        if (user.password !== data.password) {
-            throw new Error('Senha incorreta.');
-        }
-        
-        // Login bem-sucedido
-        this.currentUser = user;
-        
-        localStorage.setItem('currentUser', JSON.stringify(this.currentUser));
-        localStorage.setItem('authToken', 'simulated-token');
-        
-        this.hideLoading();
-        this.showAlert('Login realizado com sucesso! 🎉', 'success');
-        
-        this.closeLoginPage(profileType + 'Login');
-        this.updateUIAfterLogin();
-        
-    } catch (error) {
-        this.hideLoading();
-        this.showAlert(error.message, 'error');
-    }
-}
-
-    async performRegister(profileType, data) {
-        try {
-            this.showLoading('Criando sua conta...');
-            
-            await new Promise(resolve => setTimeout(resolve, 2000));
-            
-            this.hideLoading();
-            this.showAlert('Conta criada com sucesso! 🎉', 'success');
-            
-            this.showLoginForm(profileType);
-            
-        } catch (error) {
-            this.hideLoading();
-            this.showAlert('Erro ao criar conta. Tente novamente.', 'error');
-        }
-    }
-
     getProfileSpecificData(profileType) {
         const specificData = {
             profissional: {
@@ -805,6 +1112,7 @@ clearTestData() {
 
     // Sistema de Ranking
     loadRanking() {
+        // ✅ MODIFICADO: Mostrar ranking demo para todos
         const ranking = [
             { name: 'Ana Silva', points: 2850, level: 'Lenda', avatar: '👩‍💻' },
             { name: 'João Santos', points: 2420, level: 'Mestre', avatar: '👨‍💻' },
@@ -829,6 +1137,23 @@ clearTestData() {
                 </div>
             `).join('');
 
+            // Adicionar mensagem para visitantes
+            if (!this.currentUser) {
+                list.innerHTML += `
+                    <div class="ranking-item" style="text-align: center; background: rgba(74, 144, 226, 0.1);">
+                        <div style="padding: 20px;">
+                            <i class="fas fa-trophy" style="font-size: 2rem; color: #4a90e2; margin-bottom: 10px;"></i>
+                            <p style="color: var(--text-secondary); margin-bottom: 15px;">
+                                Faça login para participar do ranking e competir com outros programadores!
+                            </p>
+                            <button onclick="app.openProfileModal()" style="padding: 10px 20px; background: #4a90e2; color: white; border: none; border-radius: 20px; cursor: pointer; font-weight: bold;">
+                                <i class="fas fa-sign-in-alt"></i> Entrar no Ranking
+                            </button>
+                        </div>
+                    </div>
+                `;
+            }
+
             this.setupRankingFilters();
         }
     }
@@ -847,16 +1172,87 @@ clearTestData() {
 
     // Sistema de Progresso
     loadProgressData() {
+        // ✅ MODIFICADO: Mostrar dados demo se não estiver logado
         if (!this.currentUser) {
-            this.showLoginPrompt();
+            this.showDemoProgress();
             return;
         }
         this.updateProgressUI();
     }
 
+    showDemoProgress() {
+        const progressGrid = document.querySelector('.progress-grid');
+        if (!progressGrid) return;
+        
+        progressGrid.innerHTML = `
+            <div class="progress-card">
+                <h3><i class="fas fa-trophy"></i> Nível Atual</h3>
+                <div class="level-display">
+                    <span class="level">1</span>
+                    <div class="level-progress">
+                        <div class="progress-bar">
+                            <div class="progress" style="width: 25%"></div>
+                        </div>
+                        <span>25% para o nível 2</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="progress-card">
+                <h3><i class="fas fa-check-circle"></i> Conquistas</h3>
+                <div class="achievements">
+                    <div class="achievement unlocked">
+                        <i class="fas fa-code achievement-icon unlocked"></i>
+                        <span>Primeiro Programa ✅</span>
+                    </div>
+                    <div class="achievement locked">
+                        <i class="fas fa-bug achievement-icon locked"></i>
+                        <span>Caçador de Bugs 🔒</span>
+                    </div>
+                    <div class="achievement locked">
+                        <i class="fas fa-rocket achievement-icon locked"></i>
+                        <span>Programador Jr 🔒</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="progress-card full-width">
+                <h3><i class="fas fa-history"></i> Atividade Recente</h3>
+                <div class="activity-list">
+                    <div class="activity-item">
+                        <i class="fas fa-check success"></i>
+                        <span>Ambiente de programação explorado</span>
+                        <small>Agora</small>
+                    </div>
+                    <div class="activity-item">
+                        <i class="fas fa-play warning"></i>
+                        <span>Visualizou recursos da plataforma</span>
+                        <small>Hoje</small>
+                    </div>
+                    <div class="activity-item">
+                        <i class="fas fa-info primary"></i>
+                        <span>Primeiro acesso à plataforma</span>
+                        <small>Hoje</small>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="progress-card full-width" style="text-align: center; padding: 30px;">
+                <i class="fas fa-rocket" style="font-size: 3rem; color: #4a90e2; margin-bottom: 15px;"></i>
+                <h3 style="color: #4a90e2; margin-bottom: 10px;">Faça login para desbloquear</h3>
+                <p style="color: var(--text-secondary); margin-bottom: 20px;">
+                    Acesse seu progresso personalizado, conquistas e estatísticas detalhadas.
+                </p>
+                <button onclick="app.openProfileModal()" style="padding: 12px 30px; background: #4a90e2; color: white; border: none; border-radius: 25px; cursor: pointer; font-weight: bold;">
+                    <i class="fas fa-sign-in-alt"></i> Fazer Login
+                </button>
+            </div>
+        `;
+    }
+
     updateProgressUI() {
         if (!this.currentUser) {
-            this.showLoginPrompt();
+            this.showDemoProgress();
             return;
         }
 
@@ -1086,6 +1482,117 @@ clearTestData() {
     }
 
     // Sistema de Relatórios
+    loadReportsData() {
+        // ✅ MODIFICADO: Mostrar relatórios demo se não estiver logado
+        if (!this.currentUser) {
+            this.showDemoReports();
+            return;
+        }
+        this.updateCharts();
+    }
+
+    showDemoReports() {
+        const reportsContainer = document.querySelector('.reports-container');
+        if (!reportsContainer) return;
+        
+        reportsContainer.innerHTML = `
+            <div class="reports-header">
+                <div class="report-filters">
+                    <select id="reportPeriod">
+                        <option value="7">Últimos 7 dias</option>
+                        <option value="30">Últimos 30 dias</option>
+                    </select>
+                    <select id="reportType">
+                        <option value="overview">Visão Geral</option>
+                        <option value="languages">Por Linguagem</option>
+                    </select>
+                    <button class="btn-generate-report" onclick="app.showLoginPromptReports()">
+                        <i class="fas fa-download"></i> Gerar Relatório
+                    </button>
+                </div>
+            </div>
+
+            <div class="reports-grid">
+                <div class="report-card full-width">
+                    <h3><i class="fas fa-chart-pie"></i> Estatísticas Gerais (Demo)</h3>
+                    <div class="stats-grid">
+                        <div class="stat-box">
+                            <div class="stat-icon">
+                                <i class="fas fa-code"></i>
+                            </div>
+                            <div class="stat-info">
+                                <h4>0</h4>
+                                <p>Linhas de Código</p>
+                            </div>
+                        </div>
+                        <div class="stat-box">
+                            <div class="stat-icon">
+                                <i class="fas fa-check-circle"></i>
+                            </div>
+                            <div class="stat-info">
+                                <h4>0</h4>
+                                <p>Desafios Concluídos</p>
+                            </div>
+                        </div>
+                        <div class="stat-box">
+                            <div class="stat-icon">
+                                <i class="fas fa-clock"></i>
+                            </div>
+                            <div class="stat-info">
+                                <h4>0h</h4>
+                                <p>Tempo de Estudo</p>
+                            </div>
+                        </div>
+                        <div class="stat-box">
+                            <div class="stat-icon">
+                                <i class="fas fa-trophy"></i>
+                            </div>
+                            <div class="stat-info">
+                                <h4>1</h4>
+                                <p>Nível Atual</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="report-card">
+                    <h3><i class="fas fa-language"></i> Progresso por Linguagem</h3>
+                    <div class="chart-container" style="height: 200px; display: flex; align-items: center; justify-content: center; color: var(--text-secondary);">
+                        <div style="text-align: center;">
+                            <i class="fas fa-chart-bar" style="font-size: 3rem; margin-bottom: 10px; opacity: 0.5;"></i>
+                            <p>Faça login para ver seus gráficos</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="report-card">
+                    <h3><i class="fas fa-history"></i> Atividade Diária</h3>
+                    <div class="chart-container" style="height: 200px; display: flex; align-items: center; justify-content: center; color: var(--text-secondary);">
+                        <div style="text-align: center;">
+                            <i class="fas fa-chart-line" style="font-size: 3rem; margin-bottom: 10px; opacity: 0.5;"></i>
+                            <p>Seus dados aparecerão aqui</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="report-card full-width" style="text-align: center; padding: 40px;">
+                    <i class="fas fa-chart-line" style="font-size: 4rem; color: #4a90e2; margin-bottom: 20px;"></i>
+                    <h3 style="color: #4a90e2; margin-bottom: 15px;">Relatórios Completos</h3>
+                    <p style="color: var(--text-secondary); margin-bottom: 25px; max-width: 500px; margin-left: auto; margin-right: auto;">
+                        Faça login para acessar relatórios detalhados do seu progresso, análises de desempenho e recomendações personalizadas.
+                    </p>
+                    <button onclick="app.openProfileModal()" style="padding: 12px 30px; background: #4a90e2; color: white; border: none; border-radius: 25px; cursor: pointer; font-weight: bold; font-size: 16px;">
+                        <i class="fas fa-sign-in-alt"></i> Fazer Login para Acessar
+                    </button>
+                </div>
+            </div>
+        `;
+    }
+
+    showLoginPromptReports() {
+        this.showAlert('Faça login para gerar relatórios completos.', 'warning');
+    }
+
     initializeCharts() {
         this.createLanguageProgressChart();
         this.createDailyActivityChart();
@@ -1094,6 +1601,9 @@ clearTestData() {
     createLanguageProgressChart() {
         const ctx = document.getElementById('languageProgressChart');
         if (!ctx) return;
+
+        // Se não estiver logado, não criar gráficos
+        if (!this.currentUser) return;
 
         const languageData = this.userProgress.languages;
         const languages = Object.keys(languageData);
@@ -1166,6 +1676,9 @@ clearTestData() {
         const ctx = document.getElementById('dailyActivityChart');
         if (!ctx) return;
 
+        // Se não estiver logado, não criar gráficos
+        if (!this.currentUser) return;
+
         const days = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
         const activity = this.userProgress.dailyActivity;
 
@@ -1223,32 +1736,6 @@ clearTestData() {
     updateCharts() {
         this.createLanguageProgressChart();
         this.createDailyActivityChart();
-    }
-
-    loadReportsData() {
-        if (!this.currentUser) {
-            this.showLoginPromptReports();
-            return;
-        }
-        this.updateCharts();
-    }
-
-    showLoginPromptReports() {
-        const reportsContainer = document.querySelector('.reports-container');
-        if (reportsContainer) {
-            reportsContainer.innerHTML = `
-                <div class="login-prompt" style="text-align: center; padding: 60px 20px;">
-                    <i class="fas fa-chart-bar" style="font-size: 4rem; margin-bottom: 20px; color: #4a90e2;"></i>
-                    <h3 style="color: #4a90e2; margin-bottom: 15px;">Acesse Relatórios Detalhados</h3>
-                    <p style="color: var(--text-secondary); margin-bottom: 25px; max-width: 500px; margin-left: auto; margin-right: auto;">
-                        Faça login para desbloquear relatórios completos do seu progresso, análises de desempenho e recomendações personalizadas.
-                    </p>
-                    <button onclick="app.openProfileModal()" style="padding: 12px 30px; background: #4a90e2; color: white; border: none; border-radius: 25px; cursor: pointer; font-weight: bold; font-size: 16px;">
-                        <i class="fas fa-sign-in-alt"></i> Fazer Login para Acessar
-                    </button>
-                </div>
-            `;
-        }
     }
 
     generateFullReport() {
@@ -1493,32 +1980,142 @@ clearTestData() {
         this.showAlert('Funcionalidade de download em desenvolvimento!', 'info');
     }
 
-    showLoginPrompt() {
-        const progressGrid = document.querySelector('.progress-grid');
-        if (progressGrid) {
-            progressGrid.innerHTML = `
-                <div class="login-prompt" style="grid-column: 1 / -1; text-align: center; padding: 40px;">
-                    <i class="fas fa-user-lock" style="font-size: 3rem; margin-bottom: 20px; color: #4a90e2;"></i>
-                    <h3 style="color: #4a90e2; margin-bottom: 15px;">Faça login para ver seu progresso</h3>
-                    <p style="color: var(--text-secondary); margin-bottom: 25px;">Acompanhe sua evolução, conquistas e atividades recentes.</p>
-                    <button onclick="app.openProfileModal()" style="padding: 12px 30px; background: #4a90e2; color: white; border: none; border-radius: 25px; cursor: pointer; font-weight: bold;">
-                        <i class="fas fa-sign-in-alt"></i> Fazer Login
-                    </button>
-                </div>
-            `;
-        }
-    }
-
     // ===== MÉTODOS DO PERFIL =====
 
     loadProfileData() {
+        // ✅ MODIFICADO: Mostrar perfil demo se não estiver logado
         if (!this.currentUser) {
-            this.showLoginPromptProfile();
+            this.showDemoProfile();
             return;
         }
         
         this.updateProfileUI();
         this.loadProfileSettings();
+    }
+
+    showDemoProfile() {
+        const profileContainer = document.querySelector('.profile-container');
+        if (!profileContainer) return;
+        
+        profileContainer.innerHTML = `
+            <div class="profile-header">
+                <div class="profile-avatar">
+                    <div class="avatar-circle">
+                        <i class="fas fa-user"></i>
+                    </div>
+                </div>
+                <div class="profile-info">
+                    <h3>Visitante</h3>
+                    <p>Convidado da plataforma</p>
+                    <div class="profile-badges">
+                        <span class="badge">Nível 1</span>
+                        <span class="badge">Visitante</span>
+                    </div>
+                </div>
+                <div class="profile-stats">
+                    <div class="stat">
+                        <span class="stat-number">0</span>
+                        <span class="stat-label">Pontos</span>
+                    </div>
+                    <div class="stat">
+                        <span class="stat-number">0</span>
+                        <span class="stat-label">Desafios</span>
+                    </div>
+                    <div class="stat">
+                        <span class="stat-number">0</span>
+                        <span class="stat-label">Linguagens</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="profile-content">
+                <div class="profile-section">
+                    <h3><i class="fas fa-info-circle"></i> Acesso de Visitante</h3>
+                    <div style="text-align: center; padding: 30px;">
+                        <i class="fas fa-eye" style="font-size: 3rem; color: #4a90e2; margin-bottom: 20px;"></i>
+                        <h4 style="color: #4a90e2; margin-bottom: 15px;">Modo de Visualização</h4>
+                        <p style="color: var(--text-secondary); margin-bottom: 25px;">
+                            Você está visualizando a plataforma como visitante. 
+                            Faça login ou cadastre-se para acessar todas as funcionalidades 
+                            e salvar seu progresso.
+                        </p>
+                        <button onclick="app.openProfileModal()" style="padding: 12px 30px; background: #4a90e2; color: white; border: none; border-radius: 25px; cursor: pointer; font-weight: bold;">
+                            <i class="fas fa-sign-in-alt"></i> Fazer Login ou Cadastrar
+                        </button>
+                    </div>
+                </div>
+
+                <div class="profile-section">
+                    <h3><i class="fas fa-chart-line"></i> Progresso e Estatísticas</h3>
+                    <div class="stats-grid">
+                        <div class="stat-card">
+                            <i class="fas fa-code"></i>
+                            <div class="stat-info">
+                                <h4>0</h4>
+                                <p>Linhas de Código</p>
+                            </div>
+                        </div>
+                        <div class="stat-card">
+                            <i class="fas fa-clock"></i>
+                            <div class="stat-info">
+                                <h4>0h</h4>
+                                <p>Horas de Estudo</p>
+                            </div>
+                        </div>
+                        <div class="stat-card">
+                            <i class="fas fa-trophy"></i>
+                            <div class="stat-info">
+                                <h4>0%</h4>
+                                <p>Conclusão</p>
+                            </div>
+                        </div>
+                        <div class="stat-card">
+                            <i class="fas fa-medal"></i>
+                            <div class="stat-info">
+                                <h4>-</h4>
+                                <p>Ranking Global</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="profile-section">
+                    <h3><i class="fas fa-language"></i> Linguagens Disponíveis</h3>
+                    <div class="languages-grid">
+                        <div class="language-progress-card">
+                            <div class="language-icon">
+                                <i class="fab fa-js"></i>
+                            </div>
+                            <div class="language-info">
+                                <h4>JavaScript</h4>
+                                <p>0% concluído</p>
+                                <div class="progress-bar">
+                                    <div class="progress" style="width: 0%"></div>
+                                </div>
+                            </div>
+                            <div class="language-stats">
+                                <span>0 desafios</span>
+                            </div>
+                        </div>
+                        <div class="language-progress-card">
+                            <div class="language-icon">
+                                <i class="fab fa-python"></i>
+                            </div>
+                            <div class="language-info">
+                                <h4>Python</h4>
+                                <p>0% concluído</p>
+                                <div class="progress-bar">
+                                    <div class="progress" style="width: 0%"></div>
+                                </div>
+                            </div>
+                            <div class="language-stats">
+                                <span>0 desafios</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
     }
 
     updateProfileUI() {
@@ -1627,24 +2224,6 @@ clearTestData() {
         const settings = JSON.parse(localStorage.getItem('userSettings') || '{}');
         settings[key] = value;
         localStorage.setItem('userSettings', JSON.stringify(settings));
-    }
-
-    showLoginPromptProfile() {
-        const profileContainer = document.querySelector('.profile-container');
-        if (profileContainer) {
-            profileContainer.innerHTML = `
-                <div class="login-prompt" style="text-align: center; padding: 60px 20px;">
-                    <i class="fas fa-user" style="font-size: 4rem; margin-bottom: 20px; color: #4a90e2;"></i>
-                    <h3 style="color: #4a90e2; margin-bottom: 15px;">Acesse seu Perfil</h3>
-                    <p style="color: var(--text-secondary); margin-bottom: 25px; max-width: 500px; margin-left: auto; margin-right: auto;">
-                        Faça login para gerenciar suas informações, configurações e acompanhar seu progresso detalhado.
-                    </p>
-                    <button onclick="app.openProfileModal()" style="padding: 12px 30px; background: #4a90e2; color: white; border: none; border-radius: 25px; cursor: pointer; font-weight: bold; font-size: 16px;">
-                        <i class="fas fa-sign-in-alt"></i> Fazer Login
-                    </button>
-                </div>
-            `;
-        }
     }
 
     // Métodos de ações do perfil
@@ -2901,90 +3480,46 @@ console.log("Boa sorte! 🚀");`;
 // ===== INICIALIZAÇÃO =====
 
 document.addEventListener('DOMContentLoaded', function() {
-    console.log('DOM Carregado - Inicializando Syntax Labs...');
-    window.app = new SyntaxLabsApp();
+    console.log('🚀 Syntax Labs - Inicializando...');
     
-    window.openChatBot = function() {
-        window.app.showAlert('Chatbot em desenvolvimento! 🤖', 'info');
-    };
-});
-
-// Exemplo de backend (Node.js/Express)
-app.post('/api/send-verification-code', async (req, res) => {
-    try {
-        const { email } = req.body;
-        
-        // Gerar código
-        const verificationCode = Math.floor(100000 + Math.random() * 900000).toString();
-        const expiration = Date.now() + 5 * 60 * 1000; // 5 minutos
-        
-        // Salvar código no banco de dados temporário
-        await db.collection('verificationCodes').insertOne({
-            email,
-            code: verificationCode,
-            expiresAt: new Date(expiration),
-            createdAt: new Date()
-        });
-        
-        // Enviar e-mail usando serviço como SendGrid, AWS SES, etc.
-        await emailService.send({
-            to: email,
-            subject: 'Syntax Labs - Código de Verificação',
-            html: `
-                <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-                    <h2 style="color: #4a90e2;">Syntax Labs</h2>
-                    <p>Seu código de verificação é:</p>
-                    <div style="font-size: 2rem; font-weight: bold; color: #4a90e2; text-align: center; margin: 20px 0;">
-                        ${verificationCode}
-                    </div>
-                    <p>Use este código para completar seu cadastro.</p>
-                    <p><small>Este código expira em 5 minutos.</small></p>
-                </div>
-            `
-        });
-        
-        res.json({ success: true });
-    } catch (error) {
-        res.status(500).json({ error: 'Erro ao enviar código' });
-    }
-});
-
-app.post('/api/verify-code', async (req, res) => {
-    try {
-        const { email, code } = req.body;
-        
-        // Buscar código no banco
-        const verification = await db.collection('verificationCodes').findOne({
-            email,
-            code,
-            expiresAt: { $gt: new Date() }
-        });
-        
-        if (!verification) {
-            return res.status(400).json({ error: 'Código inválido ou expirado' });
+    // Pequeno delay para garantir que tudo carregou
+    setTimeout(() => {
+        // Teste do sistema de autenticação
+        try {
+            const users = JSON.parse(localStorage.getItem('registeredUsers') || '{}');
+            const currentUser = JSON.parse(localStorage.getItem('currentUser') || 'null');
+            
+            console.log('🔐 Status do Sistema:');
+            console.log('- Usuários cadastrados:', Object.keys(users).length);
+            console.log('- Usuário logado:', currentUser ? currentUser.email : 'Nenhum');
+        } catch (error) {
+            console.log('⚠️ Sistema de autenticação ainda não inicializado');
         }
         
-        // Remover código usado
-        await db.collection('verificationCodes').deleteOne({ _id: verification._id });
-        
-        res.json({ success: true });
-    } catch (error) {
-        res.status(500).json({ error: 'Erro ao verificar código' });
+        // Inicializar aplicação principal
+        if (typeof SyntaxLabsApp === 'function') {
+            window.app = new SyntaxLabsApp();
+            console.log('✅ Aplicação Syntax Labs carregada!');
+        } else {
+            console.error('❌ Erro: SyntaxLabsApp não encontrada');
+        }
+    }, 500);
+});
+
+// Função global para abrir chatbot
+window.openChatBot = function() {
+    if (window.app && typeof window.app.showAlert === 'function') {
+        window.app.showAlert('Chatbot em desenvolvimento! 🤖', 'info');
+    } else {
+        alert('Chatbot em desenvolvimento! 🤖');
     }
-});
+};
 
-// No final do arquivo, adicione:
-function testAuthSystem() {
-    console.log('=== SISTEMA DE AUTENTICAÇÃO - STATUS ===');
-    const users = JSON.parse(localStorage.getItem('registeredUsers') || '{}');
-    const currentUser = JSON.parse(localStorage.getItem('currentUser') || 'null');
-    
-    console.log('Usuários cadastrados:', Object.keys(users).length);
-    console.log('Usuário logado:', currentUser ? currentUser.email : 'Nenhum');
-    console.log('========================');
-}
-
-// Executar quando a página carregar
-document.addEventListener('DOMContentLoaded', function() {
-    setTimeout(testAuthSystem, 1000);
-});
+// Função para debug (apenas desenvolvimento)
+window.showUsers = () => {
+    if (window.app && typeof window.app.viewRegisteredUsers === 'function') {
+        window.app.viewRegisteredUsers();
+    } else {
+        console.log('App não inicializada');
+    }
+};
