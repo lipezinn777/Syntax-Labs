@@ -8,8 +8,11 @@ class SyntaxLabsApp {
         this.theme = localStorage.getItem('theme') || 'dark';
         this.userProgress = this.loadUserProgress();
         
-        // Sistema de autenticação SIMPLIFICADO (sem verificação por email)
-        this.authToken = localStorage.getItem('authToken');
+        // Sistema de autenticação
+        this.pendingUser = null;
+        this.verificationCode = null;
+        this.codeExpiration = null;
+        this.countdownInterval = null;
         
         this.init();
     }
@@ -179,6 +182,9 @@ class SyntaxLabsApp {
     onTabChange(tabId) {
         console.log('Aba alterada para:', tabId);
         
+        // ✅ REMOVIDO: Verificação de login para abas protegidas
+        // As pessoas podem visualizar todas as abas sem cadastro
+        
         switch(tabId) {
             case 'programacao':
                 this.initializeProgrammingSystem();
@@ -205,47 +211,15 @@ class SyntaxLabsApp {
     }
 
     initializeProgrammingSystem() {
+        // ✅ REMOVIDO: Verificação de login
+        // Qualquer pessoa pode acessar o ambiente de programação
+        
         if (!window.advancedProgrammingSystem) {
             window.advancedProgrammingSystem = new AdvancedProgrammingSystem(this);
         }
         
+        // Carregar linguagens (usuário não logado verá apenas as básicas)
         window.advancedProgrammingSystem.loadLanguages(this.currentUser);
-        this.updateProgrammingTabMessage();
-    }
-
-    updateProgrammingTabMessage() {
-        const programmingTab = document.getElementById('programacao');
-        if (!programmingTab) return;
-
-        const oldMessages = programmingTab.querySelectorAll('.user-welcome-message');
-        oldMessages.forEach(msg => msg.remove());
-
-        if (this.currentUser) {
-            const welcomeMessage = document.createElement('div');
-            welcomeMessage.className = 'user-welcome-message';
-            welcomeMessage.innerHTML = `
-                <div style="text-align: center; padding: 20px; background: linear-gradient(135deg, #00ff88, #00cc6a); border-radius: 10px; margin-bottom: 20px;">
-                    <h3 style="color: white; margin-bottom: 10px;">🎉 Bem-vindo, ${this.currentUser.name}!</h3>
-                    <p style="color: rgba(255,255,255,0.9); margin-bottom: 15px;">
-                        Você tem acesso completo a todas as ${this.getAvailableLanguagesCount()} linguagens de programação!
-                    </p>
-                    <div style="display: flex; gap: 10px; justify-content: center;">
-                        <button onclick="advancedProgrammingSystem.loadLanguages(app.currentUser)" style="padding: 8px 16px; background: white; color: #00cc6a; border: none; border-radius: 15px; cursor: pointer; font-weight: bold;">
-                            <i class="fas fa-sync"></i> Recarregar Linguagens
-                        </button>
-                    </div>
-                </div>
-            `;
-            
-            const languagesGrid = programmingTab.querySelector('#languagesGrid');
-            if (languagesGrid && languagesGrid.parentNode) {
-                languagesGrid.parentNode.insertBefore(welcomeMessage, languagesGrid);
-            }
-        }
-    }
-
-    getAvailableLanguagesCount() {
-        return this.currentUser ? 11 : 5;
     }
 
     toggleTheme() {
@@ -262,10 +236,12 @@ class SyntaxLabsApp {
         this.updateCharts();
     }
 
+    // Animação do nome SyntaxLabs com códigos
     createCodeAnimation() {
         const logo = document.querySelector('.logo');
         if (!logo) return;
 
+        // Remover animação anterior
         const existingAnimation = logo.querySelector('.code-animation');
         if (existingAnimation) {
             existingAnimation.remove();
@@ -321,6 +297,7 @@ class SyntaxLabsApp {
         logo.appendChild(animationContainer);
     }
 
+    // Sistema de Modal de Perfil
     openProfileModal() {
         const modal = document.getElementById('profileModal');
         if (modal) {
@@ -465,6 +442,7 @@ class SyntaxLabsApp {
     }
 
     setupAuthForms() {
+        // Login do Estudante (já existe no HTML)
         const estudanteLoginForm = document.getElementById('estudanteLoginForm');
         if (estudanteLoginForm) {
             estudanteLoginForm.addEventListener('submit', (e) => {
@@ -473,6 +451,7 @@ class SyntaxLabsApp {
             });
         }
 
+        // Cadastro do Estudante (já existe no HTML)
         const estudanteRegisterForm = document.getElementById('estudanteRegisterForm');
         if (estudanteRegisterForm) {
             estudanteRegisterForm.addEventListener('submit', (e) => {
@@ -501,65 +480,282 @@ class SyntaxLabsApp {
         }
     }
 
-    async handleRegister(profileType) {
-        const formData = this.getFormData(profileType + 'RegisterForm');
-        
-        if (!this.validateRegisterForm(formData)) {
-            return;
-        }
-
-        const existingUsers = JSON.parse(localStorage.getItem('registeredUsers') || '{}');
-        if (existingUsers[formData.email]) {
-            this.showAlert('Este e-mail já está cadastrado.', 'error');
-            return;
-        }
-
-        await this.performRegistration(profileType, formData);
+   // NO SISTEMA DE AUTENTICAÇÃO - Substituir o método handleRegister
+async handleRegister(profileType) {
+    const formData = this.getFormData(profileType + 'RegisterForm');
+    
+    if (!this.validateRegisterForm(formData)) {
+        return;
     }
 
-    async performRegistration(profileType, data) {
+    // Verificar se o usuário já existe
+    const existingUsers = JSON.parse(localStorage.getItem('registeredUsers') || '{}');
+    if (existingUsers[formData.email]) {
+        this.showAlert('Este e-mail já está cadastrado.', 'error');
+        return;
+    }
+
+    // CADASTRO DIRETO - SEM VERIFICAÇÃO
+    await this.performDirectRegistration(profileType, formData);
+}
+
+async performDirectRegistration(profileType, data) {
+    try {
+        this.showLoading('Criando sua conta...');
+        
+        // Simular processamento
+        await new Promise(resolve => setTimeout(resolve, 1500));
+        
+        // Salvar usuário diretamente
+        const existingUsers = JSON.parse(localStorage.getItem('registeredUsers') || '{}');
+        const userEmail = data.email.toLowerCase().trim();
+        
+        existingUsers[userEmail] = {
+            id: Date.now(),
+            name: data.name,
+            email: userEmail,
+            password: data.password,
+            profile: profileType,
+            verified: true, // Agora já vem verificado
+            createdAt: new Date().toISOString(),
+            lastLogin: new Date().toISOString(),
+            // Dados de progresso inicial
+            level: 1,
+            points: 0,
+            challengesCompleted: 0,
+            linesOfCode: 0,
+            studyTime: 0
+        };
+        
+        localStorage.setItem('registeredUsers', JSON.stringify(existingUsers));
+        
+        this.hideLoading();
+        this.showAlert('🎉 Cadastro realizado com sucesso! Faça login para continuar.', 'success');
+        
+        // Fechar modal de cadastro e mostrar login
+        this.closeLoginPage(profileType + 'Register');
+        this.showLoginForm(profileType);
+        
+    } catch (error) {
+        this.hideLoading();
+        this.showAlert('Erro ao criar conta. Tente novamente.', 'error');
+    }
+}
+
+
+    setupCodeInputs() {
+        const codeInputs = document.querySelectorAll('.code-input');
+        const verifyBtn = document.getElementById('verifyBtn');
+        
+        codeInputs.forEach((input, index) => {
+            // Limpar event listeners anteriores
+            input.replaceWith(input.cloneNode(true));
+        });
+
+        // Re-selecionar os inputs após o clone
+        const freshInputs = document.querySelectorAll('.code-input');
+        
+        freshInputs.forEach((input, index) => {
+            input.addEventListener('input', (e) => {
+                const value = e.target.value;
+                
+                // Permitir apenas números
+                if (!/^\d*$/.test(value)) {
+                    e.target.value = '';
+                    return;
+                }
+                
+                if (value.length === 1 && index < freshInputs.length - 1) {
+                    freshInputs[index + 1].focus();
+                }
+                
+                // Verificar se todos os campos estão preenchidos
+                this.checkCodeCompletion();
+            });
+            
+            input.addEventListener('keydown', (e) => {
+                if (e.key === 'Backspace' && !e.target.value && index > 0) {
+                    freshInputs[index - 1].focus();
+                }
+            });
+            
+            input.addEventListener('paste', (e) => {
+                e.preventDefault();
+                const pasteData = e.clipboardData.getData('text').slice(0, 6);
+                
+                if (/^\d{6}$/.test(pasteData)) {
+                    pasteData.split('').forEach((digit, digitIndex) => {
+                        if (freshInputs[digitIndex]) {
+                            freshInputs[digitIndex].value = digit;
+                            freshInputs[digitIndex].classList.add('filled');
+                        }
+                    });
+                    
+                    if (freshInputs[5]) {
+                        freshInputs[5].focus();
+                    }
+                    
+                    this.checkCodeCompletion();
+                }
+            });
+        });
+        
+        // Focar no primeiro input
+        if (freshInputs[0]) {
+            freshInputs[0].focus();
+        }
+    }
+
+    checkCodeCompletion() {
+        const codeInputs = document.querySelectorAll('.code-input');
+        const verifyBtn = document.getElementById('verifyBtn');
+        const allFilled = Array.from(codeInputs).every(input => input.value.length === 1);
+        
+        if (verifyBtn) {
+            verifyBtn.disabled = !allFilled;
+        }
+    }
+
+    startCountdown() {
+        const countdownElement = document.getElementById('countdown');
+        const resendBtn = document.getElementById('resendBtn');
+        
+        if (this.countdownInterval) {
+            clearInterval(this.countdownInterval);
+        }
+        
+        this.countdownInterval = setInterval(() => {
+            const now = Date.now();
+            const timeLeft = this.codeExpiration - now;
+            
+            if (timeLeft <= 0) {
+                clearInterval(this.countdownInterval);
+                countdownElement.textContent = '00:00';
+                countdownElement.style.color = 'var(--error-color)';
+                
+                if (resendBtn) {
+                    resendBtn.disabled = false;
+                }
+                
+                return;
+            }
+            
+            const minutes = Math.floor(timeLeft / 60000);
+            const seconds = Math.floor((timeLeft % 60000) / 1000);
+            
+            countdownElement.textContent = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+            
+            if (resendBtn) {
+                resendBtn.disabled = true;
+            }
+            
+        }, 1000);
+    }
+
+    async verifyCode() {
+        const codeInputs = document.querySelectorAll('.code-input');
+        const enteredCode = Array.from(codeInputs).map(input => input.value).join('');
+        const verifyBtn = document.getElementById('verifyBtn');
+        const errorElement = document.getElementById('verificationError');
+        
+        if (!this.verificationCode) {
+            this.showError('Código expirado. Solicite um novo código.');
+            return;
+        }
+        
+        if (Date.now() > this.codeExpiration) {
+            this.showError('Código expirado. Solicite um novo código.');
+            return;
+        }
+        
+        // Mostrar loading
+        verifyBtn.classList.add('loading');
+        verifyBtn.disabled = true;
+        
+        // Simular verificação
+        await new Promise(resolve => setTimeout(resolve, 1000));
+        
+        if (enteredCode === this.verificationCode) {
+            // Código correto - completar cadastro
+            await this.completeRegistration();
+        } else {
+            // Código incorreto
+            this.showError('Código inválido. Tente novamente.');
+            
+            // Limpar inputs
+            codeInputs.forEach(input => {
+                input.value = '';
+                input.classList.remove('filled');
+            });
+            
+            // Focar no primeiro input
+            if (codeInputs[0]) {
+                codeInputs[0].focus();
+            }
+        }
+        
+        verifyBtn.classList.remove('loading');
+        this.checkCodeCompletion();
+    }
+
+    async completeRegistration() {
+        if (!this.pendingUser) {
+            this.showError('Erro ao processar registro.');
+            return;
+        }
+        
+        const { profileType, userData } = this.pendingUser;
+        
         try {
-            this.showLoading('Criando sua conta...');
+            console.log('Completando cadastro para:', userData.email);
             
-            await new Promise(resolve => setTimeout(resolve, 1000));
+            // Salvar usuário no banco de dados local
+            const existingUsers = JSON.parse(localStorage.getItem('registeredUsers') || '{}');
             
-            const userId = Date.now();
-            const userData = {
-                id: userId,
-                name: data.name,
-                email: data.email.toLowerCase().trim(),
-                password: data.password,
+            // ⚠️ CORREÇÃO: Garantir que o e-mail seja a chave correta
+            const userEmail = userData.email.toLowerCase().trim(); // Normalizar e-mail
+            
+            existingUsers[userEmail] = {
+                id: Date.now(),
+                name: userData.name,
+                email: userEmail, // Usar e-mail normalizado
+                password: userData.password,
                 profile: profileType,
                 verified: true,
                 createdAt: new Date().toISOString(),
                 lastLogin: new Date().toISOString(),
+                // Dados de progresso inicial
                 level: 1,
                 points: 0,
                 challengesCompleted: 0,
                 linesOfCode: 0,
-                studyTime: 0,
-                achievements: []
+                studyTime: 0
             };
             
-            const existingUsers = JSON.parse(localStorage.getItem('registeredUsers') || '{}');
-            existingUsers[userData.email] = userData;
+            console.log('Salvando usuário:', existingUsers[userEmail]);
+            
             localStorage.setItem('registeredUsers', JSON.stringify(existingUsers));
             
-            this.currentUser = userData;
-            this.authToken = 'token-' + userId;
+            // ⚠️ IMPORTANTE: Verificar se salvou corretamente
+            const verifyUsers = JSON.parse(localStorage.getItem('registeredUsers') || '{}');
+            console.log('Verificação - Usuário salvo:', verifyUsers[userEmail] ? 'SIM' : 'NÃO');
             
-            localStorage.setItem('currentUser', JSON.stringify(this.currentUser));
-            localStorage.setItem('authToken', this.authToken);
+            // Fechar modal de verificação
+            this.closeEmailVerificationModal();
             
-            this.hideLoading();
-            this.showAlert('🎉 Conta criada com sucesso! Bem-vindo ao Syntax Labs!', 'success');
+            // Mostrar mensagem de sucesso
+            this.showAlert('🎉 Cadastro realizado com sucesso! Agora faça login.', 'success');
             
-            this.closeAllModals();
-            this.updateUIAfterLogin();
+            // Limpar dados pendentes
+            this.pendingUser = null;
+            this.verificationCode = null;
+            
+            // Mostrar formulário de login
+            this.showLoginForm(profileType);
             
         } catch (error) {
-            this.hideLoading();
-            this.showAlert('Erro ao criar conta: ' + error.message, 'error');
+            console.error('Erro no completeRegistration:', error);
+            this.showError('Erro ao completar cadastro. Tente novamente.');
         }
     }
 
@@ -570,47 +766,111 @@ class SyntaxLabsApp {
             return;
         }
 
+        // ⚠️ CORREÇÃO: Normalizar e-mail na verificação também
+        const userEmail = formData.email.toLowerCase().trim();
+        
+        // Verificar se é um usuário cadastrado ANTES de tentar login
+        const existingUsers = JSON.parse(localStorage.getItem('registeredUsers') || '{}');
+        const user = existingUsers[userEmail];
+        
+        console.log('🔍 Verificando usuário:', userEmail);
+        console.log('📋 Usuários existentes:', Object.keys(existingUsers));
+        
+        if (!user) {
+            this.showAlert('❌ Usuário não cadastrado. Por favor, faça o cadastro primeiro.', 'error');
+            
+            // Mostrar debug no console
+            this.debugUserSystem();
+            return;
+        }
+
         await this.performLogin(profileType, formData);
     }
 
-    async performLogin(profileType, data) {
-        try {
-            this.showLoading('Verificando credenciais...');
-            
-            await new Promise(resolve => setTimeout(resolve, 800));
-            
-            const userEmail = data.email.toLowerCase().trim();
-            const existingUsers = JSON.parse(localStorage.getItem('registeredUsers') || '{}');
-            const user = existingUsers[userEmail];
-            
-            if (!user) {
-                throw new Error('Usuário não encontrado. Faça o cadastro primeiro.');
-            }
-            
-            if (user.password !== data.password) {
-                throw new Error('Senha incorreta.');
-            }
-            
-            this.currentUser = user;
-            this.authToken = 'token-' + user.id;
-            
-            user.lastLogin = new Date().toISOString();
-            existingUsers[userEmail] = user;
-            localStorage.setItem('registeredUsers', JSON.stringify(existingUsers));
-            
-            localStorage.setItem('currentUser', JSON.stringify(this.currentUser));
-            localStorage.setItem('authToken', this.authToken);
-            
-            this.hideLoading();
-            this.showAlert(`Bem-vindo de volta, ${this.currentUser.name}! 🎉`, 'success');
-            
-            this.closeLoginPage(profileType + 'Login');
-            this.updateUIAfterLogin();
-            
-        } catch (error) {
-            this.hideLoading();
-            this.showAlert(error.message, 'error');
+   async performLogin(profileType, data) {
+    try {
+        this.showLoading('Verificando credenciais...');
+        
+        const userEmail = data.email.toLowerCase().trim();
+        const existingUsers = JSON.parse(localStorage.getItem('registeredUsers') || '{}');
+        const user = existingUsers[userEmail];
+        
+        console.log('Buscando usuário:', userEmail);
+        console.log('Usuários disponíveis:', Object.keys(existingUsers));
+        
+        if (!user) {
+            this.debugUserSystem();
+            throw new Error('Usuário não cadastrado. Por favor, faça o cadastro primeiro.');
         }
+        
+        // ✅ REMOVIDO: Verificação de e-mail
+        // if (!user.verified) {
+        //     ... código removido ...
+        // }
+        
+        if (user.password !== data.password) {
+            throw new Error('Senha incorreta.');
+        }
+        
+        // Login bem-sucedido
+        this.currentUser = user;
+        
+        localStorage.setItem('currentUser', JSON.stringify(this.currentUser));
+        localStorage.setItem('authToken', 'simulated-token');
+        
+        this.hideLoading();
+        this.showAlert('Login realizado com sucesso! 🎉', 'success');
+        
+        this.closeLoginPage(profileType + 'Login');
+        this.updateUIAfterLogin();
+        
+    } catch (error) {
+        this.hideLoading();
+        this.showAlert(error.message, 'error');
+    }
+}
+    showError(message) {
+        const errorElement = document.getElementById('verificationError');
+        const errorMessage = document.getElementById('errorMessage');
+        
+        if (errorElement && errorMessage) {
+            errorMessage.textContent = message;
+            errorElement.style.display = 'flex';
+        }
+    }
+
+    // Método para debug do sistema de usuários
+    debugUserSystem() {
+        console.log('=== DEBUG SISTEMA DE USUÁRIOS ===');
+        const users = JSON.parse(localStorage.getItem('registeredUsers') || '{}');
+        
+        console.log('Usuários no localStorage:', users);
+        console.log('Chaves dos usuários:', Object.keys(users));
+        
+        if (this.pendingUser) {
+            console.log('Usuário pendente:', this.pendingUser.userData.email);
+        }
+        
+        // Verificar se o usuário foi salvo corretamente
+        Object.keys(users).forEach(email => {
+            console.log(`Usuário ${email}:`, users[email]);
+        });
+    }
+
+    // Método para ver todos os usuários cadastrados (apenas desenvolvimento)
+    viewRegisteredUsers() {
+        const users = JSON.parse(localStorage.getItem('registeredUsers') || '{}');
+        
+        console.log('=== USUÁRIOS CADASTRADOS ===');
+        if (Object.keys(users).length === 0) {
+            console.log('Nenhum usuário cadastrado');
+            return;
+        }
+        
+        Object.keys(users).forEach(email => {
+            const user = users[email];
+            console.log(`📧 ${email} | 👤 ${user.name} | ✅ ${user.verified ? 'Verificado' : 'Não verificado'}`);
+        });
     }
 
     getFormData(formId) {
@@ -673,6 +933,26 @@ class SyntaxLabsApp {
         return emailRegex.test(email);
     }
 
+    getProfileSpecificData(profileType) {
+        const specificData = {
+            profissional: {
+                level: 'Pleno',
+                points: 2000,
+                specialty: 'Fullstack'
+            },
+            empresa: {
+                plan: 'Corporate',
+                employees: '51-200'
+            },
+            estudante: {
+                level: 5,
+                points: 1250
+            }
+        };
+        
+        return specificData[profileType] || {};
+    }
+
     showLoginForm(profileType) {
         this.closeAllModals();
         setTimeout(() => {
@@ -703,7 +983,9 @@ class SyntaxLabsApp {
         document.body.classList.remove('modal-open');
     }
 
+    // Sistema de Ranking
     loadRanking() {
+        // ✅ MODIFICADO: Mostrar ranking demo para todos
         const ranking = [
             { name: 'Ana Silva', points: 2850, level: 'Lenda', avatar: '👩‍💻' },
             { name: 'João Santos', points: 2420, level: 'Mestre', avatar: '👨‍💻' },
@@ -728,6 +1010,7 @@ class SyntaxLabsApp {
                 </div>
             `).join('');
 
+            // Adicionar mensagem para visitantes
             if (!this.currentUser) {
                 list.innerHTML += `
                     <div class="ranking-item" style="text-align: center; background: rgba(74, 144, 226, 0.1);">
@@ -738,21 +1021,6 @@ class SyntaxLabsApp {
                             </p>
                             <button onclick="app.openProfileModal()" style="padding: 10px 20px; background: #4a90e2; color: white; border: none; border-radius: 20px; cursor: pointer; font-weight: bold;">
                                 <i class="fas fa-sign-in-alt"></i> Entrar no Ranking
-                            </button>
-                        </div>
-                    </div>
-                `;
-            } else {
-                list.innerHTML += `
-                    <div class="ranking-item" style="text-align: center; background: rgba(0, 255, 136, 0.1);">
-                        <div style="padding: 20px;">
-                            <i class="fas fa-rocket" style="font-size: 2rem; color: #00ff88; margin-bottom: 10px;"></i>
-                            <p style="color: var(--text-secondary); margin-bottom: 15px;">
-                                <strong>Bem-vindo ao ranking, ${this.currentUser.name}!</strong><br>
-                                Complete desafios para subir de posição.
-                            </p>
-                            <button onclick="app.switchTab('programacao')" style="padding: 10px 20px; background: #00ff88; color: black; border: none; border-radius: 20px; cursor: pointer; font-weight: bold;">
-                                <i class="fas fa-code"></i> Começar a Programar
                             </button>
                         </div>
                     </div>
@@ -775,12 +1043,14 @@ class SyntaxLabsApp {
         });
     }
 
+    // Sistema de Progresso
     loadProgressData() {
+        // ✅ MODIFICADO: Mostrar dados demo se não estiver logado
         if (!this.currentUser) {
             this.showDemoProgress();
-        } else {
-            this.showRealProgress();
+            return;
         }
+        this.updateProgressUI();
     }
 
     showDemoProgress() {
@@ -853,94 +1123,6 @@ class SyntaxLabsApp {
         `;
     }
 
-    showRealProgress() {
-        const progressGrid = document.querySelector('.progress-grid');
-        if (!progressGrid) return;
-        
-        const userLevel = this.currentUser?.level || 1;
-        const userPoints = this.currentUser?.points || 0;
-        const progressPercent = (userPoints % 1000) / 10;
-        
-        progressGrid.innerHTML = `
-            <div class="progress-card">
-                <h3><i class="fas fa-trophy"></i> Seu Progresso</h3>
-                <div class="level-display">
-                    <span class="level">${userLevel}</span>
-                    <div class="level-progress">
-                        <div class="progress-bar">
-                            <div class="progress" style="width: ${progressPercent}%"></div>
-                        </div>
-                        <span>${progressPercent}% para o nível ${userLevel + 1}</span>
-                    </div>
-                </div>
-                <div class="progress-stats">
-                    <div class="progress-stat">
-                        <i class="fas fa-star"></i>
-                        <span>${userPoints} pontos</span>
-                    </div>
-                    <div class="progress-stat">
-                        <i class="fas fa-check-circle"></i>
-                        <span>${this.currentUser.challengesCompleted || 0} desafios</span>
-                    </div>
-                </div>
-            </div>
-
-            <div class="progress-card">
-                <h3><i class="fas fa-check-circle"></i> Suas Conquistas</h3>
-                <div class="achievements">
-                    <div class="achievement ${userPoints > 0 ? 'unlocked' : 'locked'}">
-                        <i class="fas fa-code achievement-icon ${userPoints > 0 ? 'unlocked' : 'locked'}"></i>
-                        <span>Primeiro Programa ${userPoints > 0 ? '✅' : '🔒'}</span>
-                    </div>
-                    <div class="achievement ${userLevel >= 3 ? 'unlocked' : 'locked'}">
-                        <i class="fas fa-bug achievement-icon ${userLevel >= 3 ? 'unlocked' : 'locked'}"></i>
-                        <span>Caçador de Bugs ${userLevel >= 3 ? '✅' : '🔒'}</span>
-                    </div>
-                    <div class="achievement ${userLevel >= 5 ? 'unlocked' : 'locked'}">
-                        <i class="fas fa-rocket achievement-icon ${userLevel >= 5 ? 'unlocked' : 'locked'}"></i>
-                        <span>Programador Jr ${userLevel >= 5 ? '✅' : '🔒'}</span>
-                    </div>
-                    <div class="achievement ${userLevel >= 8 ? 'unlocked' : 'locked'}">
-                        <i class="fas fa-medal achievement-icon ${userLevel >= 8 ? 'unlocked' : 'locked'}"></i>
-                        <span>Mestre do Código ${userLevel >= 8 ? '✅' : '🔒'}</span>
-                    </div>
-                </div>
-            </div>
-
-            <div class="progress-card full-width">
-                <h3><i class="fas fa-history"></i> Sua Atividade</h3>
-                <div class="activity-list">
-                    <div class="activity-item">
-                        <i class="fas fa-check success"></i>
-                        <span>Login realizado com sucesso</span>
-                        <small>Agora</small>
-                    </div>
-                    <div class="activity-item">
-                        <i class="fas fa-user-check primary"></i>
-                        <span>Conta criada em ${new Date(this.currentUser.createdAt).toLocaleDateString('pt-BR')}</span>
-                        <small>Primeiro acesso</small>
-                    </div>
-                    <div class="activity-item">
-                        <i class="fas fa-rocket warning"></i>
-                        <span>Pronto para começar os desafios!</span>
-                        <small>Próximos passos</small>
-                    </div>
-                </div>
-            </div>
-            
-            <div class="progress-card full-width" style="text-align: center; padding: 30px; background: linear-gradient(135deg, #00ff88, #00cc6a);">
-                <i class="fas fa-rocket" style="font-size: 3rem; color: white; margin-bottom: 15px;"></i>
-                <h3 style="color: white; margin-bottom: 10px;">Bem-vindo, ${this.currentUser.name}!</h3>
-                <p style="color: rgba(255,255,255,0.9); margin-bottom: 20px;">
-                    Seu progresso está sendo salvo. Continue aprendendo e desbloqueie novas conquistas!
-                </p>
-                <button onclick="app.switchTab('programacao')" style="padding: 12px 30px; background: white; color: #00cc6a; border: none; border-radius: 25px; cursor: pointer; font-weight: bold;">
-                    <i class="fas fa-code"></i> Começar a Programar
-                </button>
-            </div>
-        `;
-    }
-
     updateProgressUI() {
         if (!this.currentUser) {
             this.showDemoProgress();
@@ -960,12 +1142,14 @@ class SyntaxLabsApp {
             const progressPercent = (userPoints % 1000) / 10;
             progressElement.style.width = `${progressPercent}%`;
             
+            // Atualizar texto do progresso
             const progressText = progressElement.parentElement?.nextElementSibling;
             if (progressText) {
                 progressText.textContent = `${progressPercent}% para o nível ${userLevel + 1}`;
             }
         }
         
+        // Atualizar conquistas baseadas no nível do usuário
         this.updateAchievements();
     }
 
@@ -1007,6 +1191,7 @@ class SyntaxLabsApp {
         `).join('');
     }
 
+    // Sistema de Login/Logout
     updateUIAfterLogin() {
         const loginBtn = document.getElementById('headerLoginBtn');
         if (loginBtn) {
@@ -1014,29 +1199,33 @@ class SyntaxLabsApp {
             loginBtn.onclick = () => this.showUserMenu();
         }
         
-        this.reloadAllTabs();
-        
-        this.showAlert(`Bem-vindo de volta, ${this.currentUser.name}! 🎉`, 'success');
-    }
-
-    reloadAllTabs() {
-        this.loadRanking();
+        // Atualizar todas as abas que podem conter conteúdo de login
+        this.updateProgressUI();
         this.loadProgressData();
-        this.loadReportsData();
         
+        // Recarregar linguagens se estiver na aba de programação
         if (this.currentTab === 'programacao' && window.advancedProgrammingSystem) {
             window.advancedProgrammingSystem.loadLanguages(this.currentUser);
-            this.updateProgrammingTabMessage();
         }
         
+        // Atualizar perfil se estiver na aba de perfil
         if (this.currentTab === 'perfil') {
             this.loadProfileData();
         }
         
+        // Atualizar relatórios se estiver na aba de relatórios
+        if (this.currentTab === 'relatorios') {
+            this.loadReportsData();
+        }
+        
+        // Forçar atualização da aba atual
         this.onTabChange(this.currentTab);
+        
+        this.showAlert(`Bem-vindo de volta, ${this.currentUser.name}! 🎉`, 'success');
     }
 
     showUserMenu() {
+        // Remover menu anterior se existir
         const existingMenu = document.querySelector('.user-menu');
         if (existingMenu) {
             existingMenu.remove();
@@ -1075,6 +1264,7 @@ class SyntaxLabsApp {
 
         document.body.appendChild(menu);
 
+        // Fechar menu ao clicar fora
         setTimeout(() => {
             const closeMenu = (e) => {
                 if (!menu.contains(e.target) && e.target !== loginBtn) {
@@ -1088,6 +1278,7 @@ class SyntaxLabsApp {
 
     showProfile() {
         this.switchTab('perfil');
+        // Remover menu
         const userMenu = document.querySelector('.user-menu');
         if (userMenu) {
             userMenu.remove();
@@ -1097,7 +1288,6 @@ class SyntaxLabsApp {
     logout() {
         if (confirm('Tem certeza que deseja sair?')) {
             this.currentUser = null;
-            this.authToken = null;
             localStorage.removeItem('currentUser');
             localStorage.removeItem('authToken');
             
@@ -1107,28 +1297,34 @@ class SyntaxLabsApp {
                 loginBtn.onclick = () => this.openProfileModal();
             }
             
+            // Remover menu de usuário
             const userMenu = document.querySelector('.user-menu');
             if (userMenu) {
                 userMenu.remove();
             }
             
-            this.reloadAllTabs();
+            // Recarregar linguagens se estiver na aba de programação
+            if (this.currentTab === 'programacao' && window.advancedProgrammingSystem) {
+                window.advancedProgrammingSystem.loadLanguages(this.currentUser);
+            }
             
             this.showAlert('Logout realizado com sucesso! 👋', 'info');
             this.switchTab('inicio');
         }
     }
 
+    // Sistema de Progresso do Usuário
     loadUserProgress() {
         const savedProgress = localStorage.getItem('userProgress');
         if (savedProgress) {
             return JSON.parse(savedProgress);
         }
         
+        // Progresso padrão
         return {
             linesOfCode: 1250,
             challengesCompleted: 24,
-            studyTime: 45,
+            studyTime: 45, // horas
             level: 5,
             languages: {
                 'JavaScript': { progress: 85, challenges: 12 },
@@ -1149,7 +1345,7 @@ class SyntaxLabsApp {
     generateDailyActivity() {
         const activity = [];
         for (let i = 0; i < 7; i++) {
-            activity.push(Math.floor(Math.random() * 120) + 30);
+            activity.push(Math.floor(Math.random() * 120) + 30); // 30-150 minutos
         }
         return activity;
     }
@@ -1158,12 +1354,14 @@ class SyntaxLabsApp {
         localStorage.setItem('userProgress', JSON.stringify(this.userProgress));
     }
 
+    // Sistema de Relatórios
     loadReportsData() {
+        // ✅ MODIFICADO: Mostrar relatórios demo se não estiver logado
         if (!this.currentUser) {
             this.showDemoReports();
-        } else {
-            this.showRealReports();
+            return;
         }
+        this.updateCharts();
     }
 
     showDemoReports() {
@@ -1264,109 +1462,6 @@ class SyntaxLabsApp {
         `;
     }
 
-    showRealReports() {
-        const reportsContainer = document.querySelector('.reports-container');
-        if (!reportsContainer) return;
-        
-        const progress = this.userProgress;
-        const userLevel = this.currentUser?.level || 1;
-        const userPoints = this.currentUser?.points || 0;
-        
-        reportsContainer.innerHTML = `
-            <div class="reports-header">
-                <div class="report-filters">
-                    <select id="reportPeriod">
-                        <option value="7">Últimos 7 dias</option>
-                        <option value="30">Últimos 30 dias</option>
-                    </select>
-                    <select id="reportType">
-                        <option value="overview">Visão Geral</option>
-                        <option value="languages">Por Linguagem</option>
-                    </select>
-                    <button class="btn-generate-report" onclick="app.generateFullReport()">
-                        <i class="fas fa-download"></i> Gerar Relatório
-                    </button>
-                </div>
-            </div>
-
-            <div class="reports-grid">
-                <div class="report-card full-width">
-                    <h3><i class="fas fa-chart-pie"></i> Suas Estatísticas</h3>
-                    <div class="stats-grid">
-                        <div class="stat-box">
-                            <div class="stat-icon" style="background: rgba(74, 144, 226, 0.1);">
-                                <i class="fas fa-code" style="color: #4a90e2;"></i>
-                            </div>
-                            <div class="stat-info">
-                                <h4>${progress.linesOfCode}</h4>
-                                <p>Linhas de Código</p>
-                            </div>
-                        </div>
-                        <div class="stat-box">
-                            <div class="stat-icon" style="background: rgba(0, 255, 136, 0.1);">
-                                <i class="fas fa-check-circle" style="color: #00ff88;"></i>
-                            </div>
-                            <div class="stat-info">
-                                <h4>${progress.challengesCompleted}</h4>
-                                <p>Desafios Concluídos</p>
-                            </div>
-                        </div>
-                        <div class="stat-box">
-                            <div class="stat-icon" style="background: rgba(255, 170, 0, 0.1);">
-                                <i class="fas fa-clock" style="color: #ffaa00;"></i>
-                            </div>
-                            <div class="stat-info">
-                                <h4>${progress.studyTime}h</h4>
-                                <p>Tempo de Estudo</p>
-                            </div>
-                        </div>
-                        <div class="stat-box">
-                            <div class="stat-icon" style="background: rgba(155, 81, 224, 0.1);">
-                                <i class="fas fa-trophy" style="color: #9b51e0;"></i>
-                            </div>
-                            <div class="stat-info">
-                                <h4>${userLevel}</h4>
-                                <p>Nível Atual</p>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="report-card">
-                    <h3><i class="fas fa-language"></i> Progresso por Linguagem</h3>
-                    <div class="chart-container" style="height: 200px;">
-                        <canvas id="languageProgressChart"></canvas>
-                    </div>
-                </div>
-
-                <div class="report-card">
-                    <h3><i class="fas fa-history"></i> Sua Atividade</h3>
-                    <div class="chart-container" style="height: 200px;">
-                        <canvas id="dailyActivityChart"></canvas>
-                    </div>
-                </div>
-
-                <div class="report-card full-width" style="text-align: center; padding: 30px; background: linear-gradient(135deg, #667eea, #764ba2);">
-                    <i class="fas fa-chart-line" style="font-size: 3rem; color: white; margin-bottom: 15px;"></i>
-                    <h3 style="color: white; margin-bottom: 10px;">Relatórios Ativos</h3>
-                    <p style="color: rgba(255,255,255,0.9); margin-bottom: 20px;">
-                        Seu progresso está sendo monitorado. Use os relatórios para acompanhar sua evolução!
-                    </p>
-                    <div style="display: flex; gap: 10px; justify-content: center;">
-                        <button onclick="app.generateFullReport()" style="padding: 10px 20px; background: white; color: #667eea; border: none; border-radius: 20px; cursor: pointer; font-weight: bold;">
-                            <i class="fas fa-download"></i> Gerar Relatório
-                        </button>
-                        <button onclick="app.switchTab('programacao')" style="padding: 10px 20px; background: rgba(255,255,255,0.2); color: white; border: 1px solid white; border-radius: 20px; cursor: pointer; font-weight: bold;">
-                            <i class="fas fa-code"></i> Continuar Estudando
-                        </button>
-                    </div>
-                </div>
-            </div>
-        `;
-
-        this.initializeCharts();
-    }
-
     showLoginPromptReports() {
         this.showAlert('Faça login para gerar relatórios completos.', 'warning');
     }
@@ -1380,12 +1475,14 @@ class SyntaxLabsApp {
         const ctx = document.getElementById('languageProgressChart');
         if (!ctx) return;
 
+        // Se não estiver logado, não criar gráficos
         if (!this.currentUser) return;
 
         const languageData = this.userProgress.languages;
         const languages = Object.keys(languageData);
         const progress = Object.values(languageData).map(lang => lang.progress);
 
+        // Destruir chart anterior se existir
         if (this.languageChart) {
             this.languageChart.destroy();
         }
@@ -1452,11 +1549,13 @@ class SyntaxLabsApp {
         const ctx = document.getElementById('dailyActivityChart');
         if (!ctx) return;
 
+        // Se não estiver logado, não criar gráficos
         if (!this.currentUser) return;
 
         const days = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
         const activity = this.userProgress.dailyActivity;
 
+        // Destruir chart anterior se existir
         if (this.dailyActivityChart) {
             this.dailyActivityChart.destroy();
         }
@@ -1634,6 +1733,7 @@ class SyntaxLabsApp {
         const characters = code.length;
         const language = window.advancedProgrammingSystem.currentLanguage;
 
+        // Análise básica do código
         const hasComments = code.includes('//') || code.includes('/*') || code.includes('#');
         const hasFunctions = code.includes('function') || code.includes('def ') || code.includes('void');
         const hasLoops = code.includes('for') || code.includes('while') || code.includes('forEach');
@@ -1753,7 +1853,10 @@ class SyntaxLabsApp {
         this.showAlert('Funcionalidade de download em desenvolvimento!', 'info');
     }
 
+    // ===== MÉTODOS DO PERFIL =====
+
     loadProfileData() {
+        // ✅ MODIFICADO: Mostrar perfil demo se não estiver logado
         if (!this.currentUser) {
             this.showDemoProfile();
             return;
@@ -1889,24 +1992,23 @@ class SyntaxLabsApp {
     }
 
     updateProfileUI() {
-        if (!this.currentUser) {
-            this.showDemoProfile();
-            return;
-        }
-
+        // Informações básicas
         document.getElementById('profileUserName').textContent = this.currentUser.name;
         document.getElementById('profileUserEmail').textContent = this.currentUser.email;
         document.getElementById('profileName').value = this.currentUser.name;
         document.getElementById('profileEmail').value = this.currentUser.email;
         document.getElementById('profileType').value = this.currentUser.profile.charAt(0).toUpperCase() + this.currentUser.profile.slice(1);
         
-        const joinDate = new Date(this.currentUser.createdAt).toLocaleDateString('pt-BR');
+        // Data de cadastro
+        const joinDate = new Date(this.currentUser.id).toLocaleDateString('pt-BR');
         document.getElementById('profileJoinDate').value = joinDate;
         
+        // Estatísticas
         document.getElementById('profilePoints').textContent = this.currentUser.points || 0;
         document.getElementById('profileLevel').textContent = `Nível ${this.currentUser.level || 1}`;
         document.getElementById('profileRole').textContent = this.currentUser.profile.charAt(0).toUpperCase() + this.currentUser.profile.slice(1);
         
+        // Progresso
         const progress = this.userProgress;
         document.getElementById('statLines').textContent = progress.linesOfCode;
         document.getElementById('statHours').textContent = `${progress.studyTime}h`;
@@ -1916,6 +2018,7 @@ class SyntaxLabsApp {
         document.getElementById('profileChallenges').textContent = progress.challengesCompleted;
         document.getElementById('profileLanguages').textContent = Object.keys(progress.languages).length;
         
+        // Linguagens
         this.loadProfileLanguages();
     }
 
@@ -1963,12 +2066,14 @@ class SyntaxLabsApp {
     }
 
     loadProfileSettings() {
+        // Carregar configurações salvas
         const settings = JSON.parse(localStorage.getItem('userSettings') || '{}');
         
         document.getElementById('emailNotifications').checked = settings.emailNotifications !== false;
         document.getElementById('darkMode').checked = settings.darkMode || this.theme === 'dark';
         document.getElementById('aiAssistance').checked = settings.aiAssistance !== false;
         
+        // Event listeners para configurações
         document.getElementById('emailNotifications').addEventListener('change', (e) => {
             this.saveSetting('emailNotifications', e.target.checked);
         });
@@ -1994,6 +2099,7 @@ class SyntaxLabsApp {
         localStorage.setItem('userSettings', JSON.stringify(settings));
     }
 
+    // Métodos de ações do perfil
     editField(fieldId) {
         const input = document.getElementById(fieldId);
         if (input.hasAttribute('readonly')) {
@@ -2004,6 +2110,7 @@ class SyntaxLabsApp {
             input.setAttribute('readonly', 'true');
             input.style.borderColor = '';
             
+            // Salvar alteração
             if (fieldId === 'profileName') {
                 this.currentUser.name = input.value;
                 localStorage.setItem('currentUser', JSON.stringify(this.currentUser));
@@ -2060,10 +2167,6 @@ class SyntaxLabsApp {
     deleteAccount() {
         if (confirm('ATENÇÃO: Esta ação irá excluir permanentemente sua conta e todos os dados. Tem certeza?')) {
             if (confirm('Digite "EXCLUIR" para confirmar:') === 'EXCLUIR') {
-                const existingUsers = JSON.parse(localStorage.getItem('registeredUsers') || '{}');
-                delete existingUsers[this.currentUser.email];
-                localStorage.setItem('registeredUsers', JSON.stringify(existingUsers));
-                
                 this.logout();
                 localStorage.removeItem('userProgress');
                 localStorage.removeItem('userSettings');
@@ -2125,6 +2228,7 @@ class SyntaxLabsApp {
         console.log('Loading complete');
     }
 
+    // Efeitos Visuais
     createParticles() {
         const particlesContainer = document.querySelector('.tech-bg');
         if (!particlesContainer) return;
@@ -2180,6 +2284,7 @@ class AdvancedProgrammingSystem {
     setupEventListeners() {
         console.log('Configurando event listeners do sistema de programação...');
         
+        // Botões de ação
         const runButton = document.getElementById('runButton');
         if (runButton) runButton.addEventListener('click', () => this.runCode());
         
@@ -2201,6 +2306,7 @@ class AdvancedProgrammingSystem {
         const sendAiQuestion = document.getElementById('sendAiQuestion');
         if (sendAiQuestion) sendAiQuestion.addEventListener('click', () => this.sendAIQuestion());
 
+        // Entrada de texto da IA
         const aiQuestion = document.getElementById('aiQuestion');
         if (aiQuestion) {
             aiQuestion.addEventListener('keypress', (e) => {
@@ -2208,6 +2314,7 @@ class AdvancedProgrammingSystem {
             });
         }
 
+        // Monitoramento do editor
         const editor = document.getElementById('advancedCodeEditor');
         if (editor) {
             editor.addEventListener('input', () => {
@@ -2224,6 +2331,7 @@ class AdvancedProgrammingSystem {
             });
         }
 
+        // Filtro de dificuldade
         const difficultyFilter = document.getElementById('difficultyFilter');
         if (difficultyFilter) {
             difficultyFilter.addEventListener('change', (e) => {
@@ -2235,6 +2343,7 @@ class AdvancedProgrammingSystem {
     loadLanguages(user = null) {
         console.log('Carregando linguagens para usuário:', user);
         
+        // Linguagens básicas para usuários não logados
         const basicLanguages = [
             { 
                 name: 'JavaScript', 
@@ -2364,6 +2473,7 @@ public class Main {
             }
         ];
 
+        // Linguagens premium para usuários logados
         const premiumLanguages = [
             ...basicLanguages,
             { 
@@ -2537,26 +2647,11 @@ _start:
         const grid = document.getElementById('languagesGrid');
         
         if (grid) {
+            // Limpar grid e mensagem informativa anterior
             grid.innerHTML = '';
             const existingInfo = document.querySelector('.languages-info');
             if (existingInfo) {
                 existingInfo.remove();
-            }
-
-            if (!user) {
-                const infoMessage = document.createElement('div');
-                infoMessage.className = 'languages-info';
-                infoMessage.innerHTML = `
-                    <div class="info-card">
-                        <i class="fas fa-crown"></i>
-                        <h4>Desbloqueie mais 6 linguagens!</h4>
-                        <p>Faça login para acessar PHP, C++, MySQL, Node.js, Lua e Assembly</p>
-                        <button class="premium-btn" onclick="app.openProfileModal()">
-                            <i class="fas fa-rocket"></i> Fazer Login
-                        </button>
-                    </div>
-                `;
-                grid.parentNode.appendChild(infoMessage);
             }
 
             grid.innerHTML = languages.map(lang => {
@@ -2572,11 +2667,13 @@ _start:
                 `;
             }).join('');
 
+            // Event listeners para seleção de linguagem
             document.querySelectorAll('.language-card').forEach(card => {
                 card.addEventListener('click', () => {
                     const language = card.dataset.lang;
                     const languageData = languages.find(l => l.name === language);
                     
+                    // Verificar se é uma linguagem premium para usuário não logado
                     const isPremiumLanguage = premiumLanguages.slice(basicLanguages.length).includes(languageData);
                     if (!user && isPremiumLanguage) {
                         this.showAlert('🔒 Esta linguagem está disponível apenas para usuários cadastrados!', 'warning');
@@ -2586,12 +2683,30 @@ _start:
                     this.selectLanguage(language, languageData);
                 });
             });
+
+            // Adicionar mensagem informativa apenas se usuário não estiver logado
+            if (!user) {
+                const infoMessage = document.createElement('div');
+                infoMessage.className = 'languages-info';
+                infoMessage.innerHTML = `
+                    <div class="info-card">
+                        <i class="fas fa-crown"></i>
+                        <h4>Desbloqueie mais 6 linguagens!</h4>
+                        <p>Faça login para acessar PHP, C++, MySQL, Node.js, Lua e Assembly</p>
+                        <button class="premium-btn" onclick="app.openProfileModal()">
+                            <i class="fas fa-rocket"></i> Fazer Login
+                        </button>
+                    </div>
+                `;
+                grid.parentNode.appendChild(infoMessage);
+            }
         }
     }
 
     selectLanguage(languageName, languageData) {
         this.currentLanguage = languageName;
         
+        // Atualizar UI
         const currentLanguageElement = document.getElementById('currentLanguage');
         if (currentLanguageElement) currentLanguageElement.textContent = languageName;
         
@@ -2601,16 +2716,23 @@ _start:
         const syntaxInfo = document.getElementById('syntaxInfo');
         if (syntaxInfo) syntaxInfo.textContent = `${languageName} • UTF-8`;
         
+        // Carregar código inicial
         const editor = document.getElementById('advancedCodeEditor');
         if (editor && languageData) {
             editor.value = languageData.starterCode;
         }
         
+        // Atualizar números de linha
         this.updateLineNumbers();
         this.loadChallenges(languageName);
         
+        // Configurar controles de rolagem
         this.setupScrollControls();
+        
+        // Configurar detecção de largura do código
         this.setupCodeWidthDetection();
+        
+        // Configurar sincronização de scroll
         this.setupScrollSync();
         
         this.showAlert(`🎉 Ambiente ${languageName} carregado!`, 'success');
@@ -2661,6 +2783,7 @@ _start:
         
         if (ideContent && controlsSidebar && scrollIndicator) {
             ideContent.addEventListener('scroll', () => {
+                // Mostrar controles quando o usuário rolar
                 if (ideContent.scrollTop > 100) {
                     controlsSidebar.classList.add('active');
                     scrollIndicator.classList.add('active');
@@ -2670,6 +2793,7 @@ _start:
                 }
             });
             
+            // Também mostrar controles quando o mouse entrar na área do IDE
             const ideContainer = document.querySelector('.advanced-ide-container');
             if (ideContainer) {
                 ideContainer.addEventListener('mouseenter', () => {
@@ -2677,6 +2801,7 @@ _start:
                 });
                 
                 ideContainer.addEventListener('mouseleave', () => {
+                    // Manter visível apenas se houver scroll
                     if (ideContent.scrollTop <= 100) {
                         controlsSidebar.classList.remove('active');
                     }
@@ -2705,6 +2830,7 @@ _start:
                 return;
             }
 
+            // Criar indicador
             const wideCodeIndicator = document.createElement('div');
             wideCodeIndicator.className = 'wide-code-indicator';
             wideCodeIndicator.textContent = 'CÓDIGO LARGO';
@@ -2724,6 +2850,7 @@ _start:
                 }
             };
             
+            // Configurar event listeners
             editor.addEventListener('input', checkCodeWidth);
             
             this.pasteHandler = () => {
@@ -2733,6 +2860,7 @@ _start:
             
             window.addEventListener('resize', checkCodeWidth);
             
+            // Verificação inicial
             checkCodeWidth();
             
         } catch (error) {
@@ -2993,6 +3121,7 @@ _start:
         }
     }
 
+    // Sistema de IA
     setupAI() {
         this.aiContext = [
             {
@@ -3226,52 +3355,44 @@ console.log("Boa sorte! 🚀");`;
 document.addEventListener('DOMContentLoaded', function() {
     console.log('🚀 Syntax Labs - Inicializando...');
     
+    // Pequeno delay para garantir que tudo carregou
     setTimeout(() => {
+        // Teste do sistema de autenticação
         try {
             const users = JSON.parse(localStorage.getItem('registeredUsers') || '{}');
             const currentUser = JSON.parse(localStorage.getItem('currentUser') || 'null');
             
             console.log('🔐 Status do Sistema:');
             console.log('- Usuários cadastrados:', Object.keys(users).length);
-            console.log('- Usuário logado:', currentUser ? currentUser.name : 'Nenhum');
-            
-            window.debugAuth = {
-                viewUsers: () => {
-                    const users = JSON.parse(localStorage.getItem('registeredUsers') || '{}');
-                    console.log('=== USUÁRIOS CADASTRADOS ===');
-                    Object.keys(users).forEach(email => {
-                        const user = users[email];
-                        console.log(`📧 ${email} | 👤 ${user.name} | 🎯 ${user.profile}`);
-                    });
-                },
-                clearUsers: () => {
-                    if (confirm('Apagar TODOS os usuários?')) {
-                        localStorage.removeItem('registeredUsers');
-                        localStorage.removeItem('currentUser');
-                        localStorage.removeItem('authToken');
-                        location.reload();
-                    }
-                }
-            };
-            console.log('🔧 Comandos de debug: debugAuth.viewUsers(), debugAuth.clearUsers()');
-            
+            console.log('- Usuário logado:', currentUser ? currentUser.email : 'Nenhum');
         } catch (error) {
-            console.log('⚠️ Sistema de autenticação em inicialização');
+            console.log('⚠️ Sistema de autenticação ainda não inicializado');
         }
         
+        // Inicializar aplicação principal
         if (typeof SyntaxLabsApp === 'function') {
             window.app = new SyntaxLabsApp();
-            console.log('✅ Syntax Labs carregada!');
+            console.log('✅ Aplicação Syntax Labs carregada!');
         } else {
             console.error('❌ Erro: SyntaxLabsApp não encontrada');
         }
     }, 500);
 });
 
+// Função global para abrir chatbot
 window.openChatBot = function() {
     if (window.app && typeof window.app.showAlert === 'function') {
         window.app.showAlert('Chatbot em desenvolvimento! 🤖', 'info');
     } else {
         alert('Chatbot em desenvolvimento! 🤖');
+    }
+};
+
+// Função para debug (apenas desenvolvimento)
+window.showUsers = () => {
+    if (window.app && typeof window.app.viewRegisteredUsers === 'function') {
+        window.app.viewRegisteredUsers();
+    } else {
+        console.log('App não inicializada');
     }
 };
