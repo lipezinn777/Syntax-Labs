@@ -467,15 +467,153 @@ class SyntaxLabsApp {
         }
     }
 
-    handleLogin(profileType) {
-        const formData = this.getFormData(profileType + 'LoginForm');
-        
-        if (!this.validateLoginForm(formData)) {
-            return;
-        }
-
-        this.performLogin(profileType, formData);
+   async handleLogin(profileType) {
+    const formData = this.getFormData(profileType + 'LoginForm');
+    
+    if (!this.validateLoginForm(formData)) {
+        return;
     }
+
+    // Verificar se é um usuário cadastrado ANTES de tentar login
+    const existingUsers = JSON.parse(localStorage.getItem('registeredUsers') || '{}');
+    const user = existingUsers[formData.email];
+    
+    if (!user) {
+        this.showAlert('❌ Usuário não cadastrado. Por favor, faça o cadastro primeiro.', 'error');
+        return;
+    }
+
+    await this.performLogin(profileType, formData);
+}
+// Método para verificar se um usuário existe
+checkUserExists(email) {
+    const existingUsers = JSON.parse(localStorage.getItem('registeredUsers') || '{}');
+    return !!existingUsers[email];
+}
+
+// Método para obter usuário
+getUserByEmail(email) {
+    const existingUsers = JSON.parse(localStorage.getItem('registeredUsers') || '{}');
+    return existingUsers[email];
+}
+async completeRegistration() {
+    if (!this.pendingUser) {
+        this.showError('Erro ao processar registro.');
+        return;
+    }
+    
+    const { profileType, userData } = this.pendingUser;
+    
+    try {
+        // Salvar usuário no banco de dados local
+        const existingUsers = JSON.parse(localStorage.getItem('registeredUsers') || '{}');
+        
+        existingUsers[userData.email] = {
+            id: Date.now(),
+            name: userData.name,
+            email: userData.email,
+            password: userData.password,
+            profile: profileType,
+            verified: true,
+            createdAt: new Date().toISOString(),
+            lastLogin: new Date().toISOString(),
+            // Dados de progresso inicial
+            progress: {
+                level: 1,
+                points: 0,
+                challengesCompleted: 0,
+                linesOfCode: 0,
+                studyTime: 0,
+                languages: {}
+            }
+        };
+        
+        localStorage.setItem('registeredUsers', JSON.stringify(existingUsers));
+        
+        // Fechar modal de verificação
+        this.closeEmailVerificationModal();
+        
+        // Mostrar mensagem de sucesso
+        this.showAlert('🎉 Cadastro realizado com sucesso! Agora faça login.', 'success');
+        
+        // Limpar formulário de cadastro
+        this.clearRegisterForm(profileType);
+        
+        // Mostrar formulário de login
+        this.showLoginForm(profileType);
+        
+    } catch (error) {
+        this.showError('Erro ao completar cadastro. Tente novamente.');
+    }
+}
+
+// Método para limpar formulário de cadastro
+clearRegisterForm(profileType) {
+    const form = document.getElementById(profileType + 'RegisterForm');
+    if (form) {
+        form.reset();
+    }
+}
+onTabChange(tabId) {
+    console.log('Aba alterada para:', tabId);
+    
+    // Verificar se o usuário está logado para abas protegidas
+    const protectedTabs = ['aprendizados', 'programacao', 'relatorios', 'ranking', 'perfil'];
+    
+    if (protectedTabs.includes(tabId) && !this.currentUser) {
+        this.showAlert('🔒 Faça login para acessar esta funcionalidade.', 'warning');
+        this.switchTab('inicio');
+        return;
+    }
+    
+    switch(tabId) {
+        case 'programacao':
+            this.initializeProgrammingSystem();
+            break;
+        case 'ranking':
+            this.loadRanking();
+            break;
+        case 'aprendizados':
+            this.loadProgressData();
+            break;
+        case 'relatorios':
+            this.loadReportsData();
+            break;
+        case 'perfil':
+            this.loadProfileData();
+            break;
+        case 'sobre':
+            this.loadAboutData();
+            break;
+        case 'inicio':
+            this.createCodeAnimation();
+            break;
+    }
+}
+initializeProgrammingSystem() {
+    if (!this.currentUser) {
+        this.showAlert('🔒 Faça login para acessar o ambiente de programação.', 'warning');
+        this.switchTab('inicio');
+        return;
+    }
+    
+    if (!window.advancedProgrammingSystem) {
+        window.advancedProgrammingSystem = new AdvancedProgrammingSystem(this);
+    }
+    // Carregar linguagens baseado no status do usuário
+    window.advancedProgrammingSystem.loadLanguages(this.currentUser);
+}
+// Método para limpar dados de teste (apenas desenvolvimento)
+clearTestData() {
+    if (confirm('Limpar todos os dados de teste?')) {
+        localStorage.removeItem('registeredUsers');
+        localStorage.removeItem('currentUser');
+        localStorage.removeItem('authToken');
+        this.currentUser = null;
+        this.showAlert('Dados de teste limpos!', 'info');
+        location.reload();
+    }
+}
 
     handleRegister(profileType) {
         const formData = this.getFormData(profileType + 'RegisterForm');
@@ -547,34 +685,56 @@ class SyntaxLabsApp {
         return emailRegex.test(email);
     }
 
-    async performLogin(profileType, data) {
-        try {
-            this.showLoading('Fazendo login...');
-            
-            await new Promise(resolve => setTimeout(resolve, 1500));
-            
-            this.currentUser = {
-                id: Date.now(),
-                name: data.name || profileType.charAt(0).toUpperCase() + profileType.slice(1),
-                email: data.email,
-                profile: profileType,
-                ...this.getProfileSpecificData(profileType)
+   async performLogin(profileType, data) {
+    try {
+        this.showLoading('Verificando credenciais...');
+        
+        // Verificar no banco de dados de usuários registrados
+        const existingUsers = JSON.parse(localStorage.getItem('registeredUsers') || '{}');
+        const user = existingUsers[data.email];
+        
+        if (!user) {
+            throw new Error('Usuário não encontrado. Faça o cadastro primeiro.');
+        }
+        
+        // Verificar se o e-mail foi verificado
+        if (!user.verified) {
+            // Se não foi verificado, reenviar código
+            this.pendingUser = {
+                profileType: profileType,
+                userData: data,
+                timestamp: Date.now()
             };
             
-            localStorage.setItem('currentUser', JSON.stringify(this.currentUser));
-            localStorage.setItem('authToken', 'simulated-token');
-            
+            await this.sendVerificationEmail(data.email);
+            this.showEmailVerificationModal(data.email);
             this.hideLoading();
-            this.showAlert('Login realizado com sucesso! 🎉', 'success');
-            
-            this.closeLoginPage(profileType + 'Login');
-            this.updateUIAfterLogin();
-            
-        } catch (error) {
-            this.hideLoading();
-            this.showAlert('Erro ao fazer login. Tente novamente.', 'error');
+            this.showAlert('E-mail não verificado. Enviamos um novo código de verificação.', 'warning');
+            return;
         }
+        
+        // Em produção, compare com hash da senha
+        if (user.password !== data.password) {
+            throw new Error('Senha incorreta.');
+        }
+        
+        // Login bem-sucedido
+        this.currentUser = user;
+        
+        localStorage.setItem('currentUser', JSON.stringify(this.currentUser));
+        localStorage.setItem('authToken', 'simulated-token');
+        
+        this.hideLoading();
+        this.showAlert('Login realizado com sucesso! 🎉', 'success');
+        
+        this.closeLoginPage(profileType + 'Login');
+        this.updateUIAfterLogin();
+        
+    } catch (error) {
+        this.hideLoading();
+        this.showAlert(error.message, 'error');
     }
+}
 
     async performRegister(profileType, data) {
         try {
@@ -2747,4 +2907,84 @@ document.addEventListener('DOMContentLoaded', function() {
     window.openChatBot = function() {
         window.app.showAlert('Chatbot em desenvolvimento! 🤖', 'info');
     };
+});
+
+// Exemplo de backend (Node.js/Express)
+app.post('/api/send-verification-code', async (req, res) => {
+    try {
+        const { email } = req.body;
+        
+        // Gerar código
+        const verificationCode = Math.floor(100000 + Math.random() * 900000).toString();
+        const expiration = Date.now() + 5 * 60 * 1000; // 5 minutos
+        
+        // Salvar código no banco de dados temporário
+        await db.collection('verificationCodes').insertOne({
+            email,
+            code: verificationCode,
+            expiresAt: new Date(expiration),
+            createdAt: new Date()
+        });
+        
+        // Enviar e-mail usando serviço como SendGrid, AWS SES, etc.
+        await emailService.send({
+            to: email,
+            subject: 'Syntax Labs - Código de Verificação',
+            html: `
+                <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+                    <h2 style="color: #4a90e2;">Syntax Labs</h2>
+                    <p>Seu código de verificação é:</p>
+                    <div style="font-size: 2rem; font-weight: bold; color: #4a90e2; text-align: center; margin: 20px 0;">
+                        ${verificationCode}
+                    </div>
+                    <p>Use este código para completar seu cadastro.</p>
+                    <p><small>Este código expira em 5 minutos.</small></p>
+                </div>
+            `
+        });
+        
+        res.json({ success: true });
+    } catch (error) {
+        res.status(500).json({ error: 'Erro ao enviar código' });
+    }
+});
+
+app.post('/api/verify-code', async (req, res) => {
+    try {
+        const { email, code } = req.body;
+        
+        // Buscar código no banco
+        const verification = await db.collection('verificationCodes').findOne({
+            email,
+            code,
+            expiresAt: { $gt: new Date() }
+        });
+        
+        if (!verification) {
+            return res.status(400).json({ error: 'Código inválido ou expirado' });
+        }
+        
+        // Remover código usado
+        await db.collection('verificationCodes').deleteOne({ _id: verification._id });
+        
+        res.json({ success: true });
+    } catch (error) {
+        res.status(500).json({ error: 'Erro ao verificar código' });
+    }
+});
+
+// No final do arquivo, adicione:
+function testAuthSystem() {
+    console.log('=== SISTEMA DE AUTENTICAÇÃO - STATUS ===');
+    const users = JSON.parse(localStorage.getItem('registeredUsers') || '{}');
+    const currentUser = JSON.parse(localStorage.getItem('currentUser') || 'null');
+    
+    console.log('Usuários cadastrados:', Object.keys(users).length);
+    console.log('Usuário logado:', currentUser ? currentUser.email : 'Nenhum');
+    console.log('========================');
+}
+
+// Executar quando a página carregar
+document.addEventListener('DOMContentLoaded', function() {
+    setTimeout(testAuthSystem, 1000);
 });
