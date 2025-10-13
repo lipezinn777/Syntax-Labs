@@ -179,9 +179,6 @@ class SyntaxLabsApp {
     onTabChange(tabId) {
         console.log('Aba alterada para:', tabId);
         
-        // ✅ REMOVIDO: Verificação de login para abas protegidas
-        // As pessoas podem visualizar todas as abas sem cadastro
-        
         switch(tabId) {
             case 'programacao':
                 this.initializeProgrammingSystem();
@@ -208,15 +205,47 @@ class SyntaxLabsApp {
     }
 
     initializeProgrammingSystem() {
-        // ✅ REMOVIDO: Verificação de login
-        // Qualquer pessoa pode acessar o ambiente de programação
-        
         if (!window.advancedProgrammingSystem) {
             window.advancedProgrammingSystem = new AdvancedProgrammingSystem(this);
         }
         
-        // Carregar linguagens (usuário não logado verá apenas as básicas)
         window.advancedProgrammingSystem.loadLanguages(this.currentUser);
+        this.updateProgrammingTabMessage();
+    }
+
+    updateProgrammingTabMessage() {
+        const programmingTab = document.getElementById('programacao');
+        if (!programmingTab) return;
+
+        const oldMessages = programmingTab.querySelectorAll('.user-welcome-message');
+        oldMessages.forEach(msg => msg.remove());
+
+        if (this.currentUser) {
+            const welcomeMessage = document.createElement('div');
+            welcomeMessage.className = 'user-welcome-message';
+            welcomeMessage.innerHTML = `
+                <div style="text-align: center; padding: 20px; background: linear-gradient(135deg, #00ff88, #00cc6a); border-radius: 10px; margin-bottom: 20px;">
+                    <h3 style="color: white; margin-bottom: 10px;">🎉 Bem-vindo, ${this.currentUser.name}!</h3>
+                    <p style="color: rgba(255,255,255,0.9); margin-bottom: 15px;">
+                        Você tem acesso completo a todas as ${this.getAvailableLanguagesCount()} linguagens de programação!
+                    </p>
+                    <div style="display: flex; gap: 10px; justify-content: center;">
+                        <button onclick="advancedProgrammingSystem.loadLanguages(app.currentUser)" style="padding: 8px 16px; background: white; color: #00cc6a; border: none; border-radius: 15px; cursor: pointer; font-weight: bold;">
+                            <i class="fas fa-sync"></i> Recarregar Linguagens
+                        </button>
+                    </div>
+                </div>
+            `;
+            
+            const languagesGrid = programmingTab.querySelector('#languagesGrid');
+            if (languagesGrid && languagesGrid.parentNode) {
+                languagesGrid.parentNode.insertBefore(welcomeMessage, languagesGrid);
+            }
+        }
+    }
+
+    getAvailableLanguagesCount() {
+        return this.currentUser ? 11 : 5;
     }
 
     toggleTheme() {
@@ -233,12 +262,10 @@ class SyntaxLabsApp {
         this.updateCharts();
     }
 
-    // Animação do nome SyntaxLabs com códigos
     createCodeAnimation() {
         const logo = document.querySelector('.logo');
         if (!logo) return;
 
-        // Remover animação anterior
         const existingAnimation = logo.querySelector('.code-animation');
         if (existingAnimation) {
             existingAnimation.remove();
@@ -294,7 +321,6 @@ class SyntaxLabsApp {
         logo.appendChild(animationContainer);
     }
 
-    // Sistema de Modal de Perfil
     openProfileModal() {
         const modal = document.getElementById('profileModal');
         if (modal) {
@@ -439,7 +465,6 @@ class SyntaxLabsApp {
     }
 
     setupAuthForms() {
-        // Login do Estudante (já existe no HTML)
         const estudanteLoginForm = document.getElementById('estudanteLoginForm');
         if (estudanteLoginForm) {
             estudanteLoginForm.addEventListener('submit', (e) => {
@@ -448,7 +473,6 @@ class SyntaxLabsApp {
             });
         }
 
-        // Cadastro do Estudante (já existe no HTML)
         const estudanteRegisterForm = document.getElementById('estudanteRegisterForm');
         if (estudanteRegisterForm) {
             estudanteRegisterForm.addEventListener('submit', (e) => {
@@ -477,8 +501,6 @@ class SyntaxLabsApp {
         }
     }
 
-    // ===== SISTEMA DE AUTENTICAÇÃO SIMPLIFICADO (SEM VERIFICAÇÃO POR EMAIL) =====
-
     async handleRegister(profileType) {
         const formData = this.getFormData(profileType + 'RegisterForm');
         
@@ -486,7 +508,6 @@ class SyntaxLabsApp {
             return;
         }
 
-        // Verificar se o usuário já existe
         const existingUsers = JSON.parse(localStorage.getItem('registeredUsers') || '{}');
         if (existingUsers[formData.email]) {
             this.showAlert('Este e-mail já está cadastrado.', 'error');
@@ -500,21 +521,18 @@ class SyntaxLabsApp {
         try {
             this.showLoading('Criando sua conta...');
             
-            // Simular processamento
             await new Promise(resolve => setTimeout(resolve, 1000));
             
-            // Criar usuário diretamente (SEM verificação por email)
             const userId = Date.now();
             const userData = {
                 id: userId,
                 name: data.name,
                 email: data.email.toLowerCase().trim(),
-                password: data.password, // ⚠️ Em produção, criptografe!
+                password: data.password,
                 profile: profileType,
-                verified: true, // ✅ Diretamente verificado
+                verified: true,
                 createdAt: new Date().toISOString(),
                 lastLogin: new Date().toISOString(),
-                // Dados de progresso inicial
                 level: 1,
                 points: 0,
                 challengesCompleted: 0,
@@ -523,12 +541,10 @@ class SyntaxLabsApp {
                 achievements: []
             };
             
-            // Salvar usuário
             const existingUsers = JSON.parse(localStorage.getItem('registeredUsers') || '{}');
             existingUsers[userData.email] = userData;
             localStorage.setItem('registeredUsers', JSON.stringify(existingUsers));
             
-            // Login automático
             this.currentUser = userData;
             this.authToken = 'token-' + userId;
             
@@ -561,30 +577,23 @@ class SyntaxLabsApp {
         try {
             this.showLoading('Verificando credenciais...');
             
-            // Simular verificação
             await new Promise(resolve => setTimeout(resolve, 800));
             
             const userEmail = data.email.toLowerCase().trim();
             const existingUsers = JSON.parse(localStorage.getItem('registeredUsers') || '{}');
             const user = existingUsers[userEmail];
             
-            console.log('Buscando usuário:', userEmail);
-            console.log('Usuários disponíveis:', Object.keys(existingUsers));
-            
             if (!user) {
                 throw new Error('Usuário não encontrado. Faça o cadastro primeiro.');
             }
             
-            // ⚠️ CORREÇÃO: Comparação de senha (em produção use bcrypt)
             if (user.password !== data.password) {
                 throw new Error('Senha incorreta.');
             }
             
-            // Login bem-sucedido
             this.currentUser = user;
             this.authToken = 'token-' + user.id;
             
-            // Atualizar último login
             user.lastLogin = new Date().toISOString();
             existingUsers[userEmail] = user;
             localStorage.setItem('registeredUsers', JSON.stringify(existingUsers));
@@ -694,9 +703,7 @@ class SyntaxLabsApp {
         document.body.classList.remove('modal-open');
     }
 
-    // Sistema de Ranking
     loadRanking() {
-        // ✅ MODIFICADO: Mostrar ranking demo para todos
         const ranking = [
             { name: 'Ana Silva', points: 2850, level: 'Lenda', avatar: '👩‍💻' },
             { name: 'João Santos', points: 2420, level: 'Mestre', avatar: '👨‍💻' },
@@ -721,7 +728,6 @@ class SyntaxLabsApp {
                 </div>
             `).join('');
 
-            // Adicionar mensagem para visitantes
             if (!this.currentUser) {
                 list.innerHTML += `
                     <div class="ranking-item" style="text-align: center; background: rgba(74, 144, 226, 0.1);">
@@ -732,6 +738,21 @@ class SyntaxLabsApp {
                             </p>
                             <button onclick="app.openProfileModal()" style="padding: 10px 20px; background: #4a90e2; color: white; border: none; border-radius: 20px; cursor: pointer; font-weight: bold;">
                                 <i class="fas fa-sign-in-alt"></i> Entrar no Ranking
+                            </button>
+                        </div>
+                    </div>
+                `;
+            } else {
+                list.innerHTML += `
+                    <div class="ranking-item" style="text-align: center; background: rgba(0, 255, 136, 0.1);">
+                        <div style="padding: 20px;">
+                            <i class="fas fa-rocket" style="font-size: 2rem; color: #00ff88; margin-bottom: 10px;"></i>
+                            <p style="color: var(--text-secondary); margin-bottom: 15px;">
+                                <strong>Bem-vindo ao ranking, ${this.currentUser.name}!</strong><br>
+                                Complete desafios para subir de posição.
+                            </p>
+                            <button onclick="app.switchTab('programacao')" style="padding: 10px 20px; background: #00ff88; color: black; border: none; border-radius: 20px; cursor: pointer; font-weight: bold;">
+                                <i class="fas fa-code"></i> Começar a Programar
                             </button>
                         </div>
                     </div>
@@ -754,14 +775,12 @@ class SyntaxLabsApp {
         });
     }
 
-    // Sistema de Progresso
     loadProgressData() {
-        // ✅ MODIFICADO: Mostrar dados demo se não estiver logado
         if (!this.currentUser) {
             this.showDemoProgress();
-            return;
+        } else {
+            this.showRealProgress();
         }
-        this.updateProgressUI();
     }
 
     showDemoProgress() {
@@ -834,6 +853,94 @@ class SyntaxLabsApp {
         `;
     }
 
+    showRealProgress() {
+        const progressGrid = document.querySelector('.progress-grid');
+        if (!progressGrid) return;
+        
+        const userLevel = this.currentUser?.level || 1;
+        const userPoints = this.currentUser?.points || 0;
+        const progressPercent = (userPoints % 1000) / 10;
+        
+        progressGrid.innerHTML = `
+            <div class="progress-card">
+                <h3><i class="fas fa-trophy"></i> Seu Progresso</h3>
+                <div class="level-display">
+                    <span class="level">${userLevel}</span>
+                    <div class="level-progress">
+                        <div class="progress-bar">
+                            <div class="progress" style="width: ${progressPercent}%"></div>
+                        </div>
+                        <span>${progressPercent}% para o nível ${userLevel + 1}</span>
+                    </div>
+                </div>
+                <div class="progress-stats">
+                    <div class="progress-stat">
+                        <i class="fas fa-star"></i>
+                        <span>${userPoints} pontos</span>
+                    </div>
+                    <div class="progress-stat">
+                        <i class="fas fa-check-circle"></i>
+                        <span>${this.currentUser.challengesCompleted || 0} desafios</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="progress-card">
+                <h3><i class="fas fa-check-circle"></i> Suas Conquistas</h3>
+                <div class="achievements">
+                    <div class="achievement ${userPoints > 0 ? 'unlocked' : 'locked'}">
+                        <i class="fas fa-code achievement-icon ${userPoints > 0 ? 'unlocked' : 'locked'}"></i>
+                        <span>Primeiro Programa ${userPoints > 0 ? '✅' : '🔒'}</span>
+                    </div>
+                    <div class="achievement ${userLevel >= 3 ? 'unlocked' : 'locked'}">
+                        <i class="fas fa-bug achievement-icon ${userLevel >= 3 ? 'unlocked' : 'locked'}"></i>
+                        <span>Caçador de Bugs ${userLevel >= 3 ? '✅' : '🔒'}</span>
+                    </div>
+                    <div class="achievement ${userLevel >= 5 ? 'unlocked' : 'locked'}">
+                        <i class="fas fa-rocket achievement-icon ${userLevel >= 5 ? 'unlocked' : 'locked'}"></i>
+                        <span>Programador Jr ${userLevel >= 5 ? '✅' : '🔒'}</span>
+                    </div>
+                    <div class="achievement ${userLevel >= 8 ? 'unlocked' : 'locked'}">
+                        <i class="fas fa-medal achievement-icon ${userLevel >= 8 ? 'unlocked' : 'locked'}"></i>
+                        <span>Mestre do Código ${userLevel >= 8 ? '✅' : '🔒'}</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="progress-card full-width">
+                <h3><i class="fas fa-history"></i> Sua Atividade</h3>
+                <div class="activity-list">
+                    <div class="activity-item">
+                        <i class="fas fa-check success"></i>
+                        <span>Login realizado com sucesso</span>
+                        <small>Agora</small>
+                    </div>
+                    <div class="activity-item">
+                        <i class="fas fa-user-check primary"></i>
+                        <span>Conta criada em ${new Date(this.currentUser.createdAt).toLocaleDateString('pt-BR')}</span>
+                        <small>Primeiro acesso</small>
+                    </div>
+                    <div class="activity-item">
+                        <i class="fas fa-rocket warning"></i>
+                        <span>Pronto para começar os desafios!</span>
+                        <small>Próximos passos</small>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="progress-card full-width" style="text-align: center; padding: 30px; background: linear-gradient(135deg, #00ff88, #00cc6a);">
+                <i class="fas fa-rocket" style="font-size: 3rem; color: white; margin-bottom: 15px;"></i>
+                <h3 style="color: white; margin-bottom: 10px;">Bem-vindo, ${this.currentUser.name}!</h3>
+                <p style="color: rgba(255,255,255,0.9); margin-bottom: 20px;">
+                    Seu progresso está sendo salvo. Continue aprendendo e desbloqueie novas conquistas!
+                </p>
+                <button onclick="app.switchTab('programacao')" style="padding: 12px 30px; background: white; color: #00cc6a; border: none; border-radius: 25px; cursor: pointer; font-weight: bold;">
+                    <i class="fas fa-code"></i> Começar a Programar
+                </button>
+            </div>
+        `;
+    }
+
     updateProgressUI() {
         if (!this.currentUser) {
             this.showDemoProgress();
@@ -853,14 +960,12 @@ class SyntaxLabsApp {
             const progressPercent = (userPoints % 1000) / 10;
             progressElement.style.width = `${progressPercent}%`;
             
-            // Atualizar texto do progresso
             const progressText = progressElement.parentElement?.nextElementSibling;
             if (progressText) {
                 progressText.textContent = `${progressPercent}% para o nível ${userLevel + 1}`;
             }
         }
         
-        // Atualizar conquistas baseadas no nível do usuário
         this.updateAchievements();
     }
 
@@ -902,7 +1007,6 @@ class SyntaxLabsApp {
         `).join('');
     }
 
-    // Sistema de Login/Logout
     updateUIAfterLogin() {
         const loginBtn = document.getElementById('headerLoginBtn');
         if (loginBtn) {
@@ -910,33 +1014,29 @@ class SyntaxLabsApp {
             loginBtn.onclick = () => this.showUserMenu();
         }
         
-        // Atualizar todas as abas que podem conter conteúdo de login
-        this.updateProgressUI();
-        this.loadProgressData();
-        
-        // Recarregar linguagens se estiver na aba de programação
-        if (this.currentTab === 'programacao' && window.advancedProgrammingSystem) {
-            window.advancedProgrammingSystem.loadLanguages(this.currentUser);
-        }
-        
-        // Atualizar perfil se estiver na aba de perfil
-        if (this.currentTab === 'perfil') {
-            this.loadProfileData();
-        }
-        
-        // Atualizar relatórios se estiver na aba de relatórios
-        if (this.currentTab === 'relatorios') {
-            this.loadReportsData();
-        }
-        
-        // Forçar atualização da aba atual
-        this.onTabChange(this.currentTab);
+        this.reloadAllTabs();
         
         this.showAlert(`Bem-vindo de volta, ${this.currentUser.name}! 🎉`, 'success');
     }
 
+    reloadAllTabs() {
+        this.loadRanking();
+        this.loadProgressData();
+        this.loadReportsData();
+        
+        if (this.currentTab === 'programacao' && window.advancedProgrammingSystem) {
+            window.advancedProgrammingSystem.loadLanguages(this.currentUser);
+            this.updateProgrammingTabMessage();
+        }
+        
+        if (this.currentTab === 'perfil') {
+            this.loadProfileData();
+        }
+        
+        this.onTabChange(this.currentTab);
+    }
+
     showUserMenu() {
-        // Remover menu anterior se existir
         const existingMenu = document.querySelector('.user-menu');
         if (existingMenu) {
             existingMenu.remove();
@@ -975,7 +1075,6 @@ class SyntaxLabsApp {
 
         document.body.appendChild(menu);
 
-        // Fechar menu ao clicar fora
         setTimeout(() => {
             const closeMenu = (e) => {
                 if (!menu.contains(e.target) && e.target !== loginBtn) {
@@ -989,7 +1088,6 @@ class SyntaxLabsApp {
 
     showProfile() {
         this.switchTab('perfil');
-        // Remover menu
         const userMenu = document.querySelector('.user-menu');
         if (userMenu) {
             userMenu.remove();
@@ -1009,34 +1107,28 @@ class SyntaxLabsApp {
                 loginBtn.onclick = () => this.openProfileModal();
             }
             
-            // Remover menu de usuário
             const userMenu = document.querySelector('.user-menu');
             if (userMenu) {
                 userMenu.remove();
             }
             
-            // Recarregar linguagens se estiver na aba de programação
-            if (this.currentTab === 'programacao' && window.advancedProgrammingSystem) {
-                window.advancedProgrammingSystem.loadLanguages(this.currentUser);
-            }
+            this.reloadAllTabs();
             
             this.showAlert('Logout realizado com sucesso! 👋', 'info');
             this.switchTab('inicio');
         }
     }
 
-    // Sistema de Progresso do Usuário
     loadUserProgress() {
         const savedProgress = localStorage.getItem('userProgress');
         if (savedProgress) {
             return JSON.parse(savedProgress);
         }
         
-        // Progresso padrão
         return {
             linesOfCode: 1250,
             challengesCompleted: 24,
-            studyTime: 45, // horas
+            studyTime: 45,
             level: 5,
             languages: {
                 'JavaScript': { progress: 85, challenges: 12 },
@@ -1057,7 +1149,7 @@ class SyntaxLabsApp {
     generateDailyActivity() {
         const activity = [];
         for (let i = 0; i < 7; i++) {
-            activity.push(Math.floor(Math.random() * 120) + 30); // 30-150 minutos
+            activity.push(Math.floor(Math.random() * 120) + 30);
         }
         return activity;
     }
@@ -1066,14 +1158,12 @@ class SyntaxLabsApp {
         localStorage.setItem('userProgress', JSON.stringify(this.userProgress));
     }
 
-    // Sistema de Relatórios
     loadReportsData() {
-        // ✅ MODIFICADO: Mostrar relatórios demo se não estiver logado
         if (!this.currentUser) {
             this.showDemoReports();
-            return;
+        } else {
+            this.showRealReports();
         }
-        this.updateCharts();
     }
 
     showDemoReports() {
@@ -1174,6 +1264,109 @@ class SyntaxLabsApp {
         `;
     }
 
+    showRealReports() {
+        const reportsContainer = document.querySelector('.reports-container');
+        if (!reportsContainer) return;
+        
+        const progress = this.userProgress;
+        const userLevel = this.currentUser?.level || 1;
+        const userPoints = this.currentUser?.points || 0;
+        
+        reportsContainer.innerHTML = `
+            <div class="reports-header">
+                <div class="report-filters">
+                    <select id="reportPeriod">
+                        <option value="7">Últimos 7 dias</option>
+                        <option value="30">Últimos 30 dias</option>
+                    </select>
+                    <select id="reportType">
+                        <option value="overview">Visão Geral</option>
+                        <option value="languages">Por Linguagem</option>
+                    </select>
+                    <button class="btn-generate-report" onclick="app.generateFullReport()">
+                        <i class="fas fa-download"></i> Gerar Relatório
+                    </button>
+                </div>
+            </div>
+
+            <div class="reports-grid">
+                <div class="report-card full-width">
+                    <h3><i class="fas fa-chart-pie"></i> Suas Estatísticas</h3>
+                    <div class="stats-grid">
+                        <div class="stat-box">
+                            <div class="stat-icon" style="background: rgba(74, 144, 226, 0.1);">
+                                <i class="fas fa-code" style="color: #4a90e2;"></i>
+                            </div>
+                            <div class="stat-info">
+                                <h4>${progress.linesOfCode}</h4>
+                                <p>Linhas de Código</p>
+                            </div>
+                        </div>
+                        <div class="stat-box">
+                            <div class="stat-icon" style="background: rgba(0, 255, 136, 0.1);">
+                                <i class="fas fa-check-circle" style="color: #00ff88;"></i>
+                            </div>
+                            <div class="stat-info">
+                                <h4>${progress.challengesCompleted}</h4>
+                                <p>Desafios Concluídos</p>
+                            </div>
+                        </div>
+                        <div class="stat-box">
+                            <div class="stat-icon" style="background: rgba(255, 170, 0, 0.1);">
+                                <i class="fas fa-clock" style="color: #ffaa00;"></i>
+                            </div>
+                            <div class="stat-info">
+                                <h4>${progress.studyTime}h</h4>
+                                <p>Tempo de Estudo</p>
+                            </div>
+                        </div>
+                        <div class="stat-box">
+                            <div class="stat-icon" style="background: rgba(155, 81, 224, 0.1);">
+                                <i class="fas fa-trophy" style="color: #9b51e0;"></i>
+                            </div>
+                            <div class="stat-info">
+                                <h4>${userLevel}</h4>
+                                <p>Nível Atual</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="report-card">
+                    <h3><i class="fas fa-language"></i> Progresso por Linguagem</h3>
+                    <div class="chart-container" style="height: 200px;">
+                        <canvas id="languageProgressChart"></canvas>
+                    </div>
+                </div>
+
+                <div class="report-card">
+                    <h3><i class="fas fa-history"></i> Sua Atividade</h3>
+                    <div class="chart-container" style="height: 200px;">
+                        <canvas id="dailyActivityChart"></canvas>
+                    </div>
+                </div>
+
+                <div class="report-card full-width" style="text-align: center; padding: 30px; background: linear-gradient(135deg, #667eea, #764ba2);">
+                    <i class="fas fa-chart-line" style="font-size: 3rem; color: white; margin-bottom: 15px;"></i>
+                    <h3 style="color: white; margin-bottom: 10px;">Relatórios Ativos</h3>
+                    <p style="color: rgba(255,255,255,0.9); margin-bottom: 20px;">
+                        Seu progresso está sendo monitorado. Use os relatórios para acompanhar sua evolução!
+                    </p>
+                    <div style="display: flex; gap: 10px; justify-content: center;">
+                        <button onclick="app.generateFullReport()" style="padding: 10px 20px; background: white; color: #667eea; border: none; border-radius: 20px; cursor: pointer; font-weight: bold;">
+                            <i class="fas fa-download"></i> Gerar Relatório
+                        </button>
+                        <button onclick="app.switchTab('programacao')" style="padding: 10px 20px; background: rgba(255,255,255,0.2); color: white; border: 1px solid white; border-radius: 20px; cursor: pointer; font-weight: bold;">
+                            <i class="fas fa-code"></i> Continuar Estudando
+                        </button>
+                    </div>
+                </div>
+            </div>
+        `;
+
+        this.initializeCharts();
+    }
+
     showLoginPromptReports() {
         this.showAlert('Faça login para gerar relatórios completos.', 'warning');
     }
@@ -1187,14 +1380,12 @@ class SyntaxLabsApp {
         const ctx = document.getElementById('languageProgressChart');
         if (!ctx) return;
 
-        // Se não estiver logado, não criar gráficos
         if (!this.currentUser) return;
 
         const languageData = this.userProgress.languages;
         const languages = Object.keys(languageData);
         const progress = Object.values(languageData).map(lang => lang.progress);
 
-        // Destruir chart anterior se existir
         if (this.languageChart) {
             this.languageChart.destroy();
         }
@@ -1261,13 +1452,11 @@ class SyntaxLabsApp {
         const ctx = document.getElementById('dailyActivityChart');
         if (!ctx) return;
 
-        // Se não estiver logado, não criar gráficos
         if (!this.currentUser) return;
 
         const days = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
         const activity = this.userProgress.dailyActivity;
 
-        // Destruir chart anterior se existir
         if (this.dailyActivityChart) {
             this.dailyActivityChart.destroy();
         }
@@ -1445,7 +1634,6 @@ class SyntaxLabsApp {
         const characters = code.length;
         const language = window.advancedProgrammingSystem.currentLanguage;
 
-        // Análise básica do código
         const hasComments = code.includes('//') || code.includes('/*') || code.includes('#');
         const hasFunctions = code.includes('function') || code.includes('def ') || code.includes('void');
         const hasLoops = code.includes('for') || code.includes('while') || code.includes('forEach');
@@ -1565,10 +1753,7 @@ class SyntaxLabsApp {
         this.showAlert('Funcionalidade de download em desenvolvimento!', 'info');
     }
 
-    // ===== MÉTODOS DO PERFIL =====
-
     loadProfileData() {
-        // ✅ MODIFICADO: Mostrar perfil demo se não estiver logado
         if (!this.currentUser) {
             this.showDemoProfile();
             return;
@@ -1709,23 +1894,19 @@ class SyntaxLabsApp {
             return;
         }
 
-        // Informações básicas
         document.getElementById('profileUserName').textContent = this.currentUser.name;
         document.getElementById('profileUserEmail').textContent = this.currentUser.email;
         document.getElementById('profileName').value = this.currentUser.name;
         document.getElementById('profileEmail').value = this.currentUser.email;
         document.getElementById('profileType').value = this.currentUser.profile.charAt(0).toUpperCase() + this.currentUser.profile.slice(1);
         
-        // Data de cadastro
         const joinDate = new Date(this.currentUser.createdAt).toLocaleDateString('pt-BR');
         document.getElementById('profileJoinDate').value = joinDate;
         
-        // Estatísticas
         document.getElementById('profilePoints').textContent = this.currentUser.points || 0;
         document.getElementById('profileLevel').textContent = `Nível ${this.currentUser.level || 1}`;
         document.getElementById('profileRole').textContent = this.currentUser.profile.charAt(0).toUpperCase() + this.currentUser.profile.slice(1);
         
-        // Progresso
         const progress = this.userProgress;
         document.getElementById('statLines').textContent = progress.linesOfCode;
         document.getElementById('statHours').textContent = `${progress.studyTime}h`;
@@ -1735,7 +1916,6 @@ class SyntaxLabsApp {
         document.getElementById('profileChallenges').textContent = progress.challengesCompleted;
         document.getElementById('profileLanguages').textContent = Object.keys(progress.languages).length;
         
-        // Linguagens
         this.loadProfileLanguages();
     }
 
@@ -1783,14 +1963,12 @@ class SyntaxLabsApp {
     }
 
     loadProfileSettings() {
-        // Carregar configurações salvas
         const settings = JSON.parse(localStorage.getItem('userSettings') || '{}');
         
         document.getElementById('emailNotifications').checked = settings.emailNotifications !== false;
         document.getElementById('darkMode').checked = settings.darkMode || this.theme === 'dark';
         document.getElementById('aiAssistance').checked = settings.aiAssistance !== false;
         
-        // Event listeners para configurações
         document.getElementById('emailNotifications').addEventListener('change', (e) => {
             this.saveSetting('emailNotifications', e.target.checked);
         });
@@ -1816,7 +1994,6 @@ class SyntaxLabsApp {
         localStorage.setItem('userSettings', JSON.stringify(settings));
     }
 
-    // Métodos de ações do perfil
     editField(fieldId) {
         const input = document.getElementById(fieldId);
         if (input.hasAttribute('readonly')) {
@@ -1827,7 +2004,6 @@ class SyntaxLabsApp {
             input.setAttribute('readonly', 'true');
             input.style.borderColor = '';
             
-            // Salvar alteração
             if (fieldId === 'profileName') {
                 this.currentUser.name = input.value;
                 localStorage.setItem('currentUser', JSON.stringify(this.currentUser));
@@ -1884,7 +2060,6 @@ class SyntaxLabsApp {
     deleteAccount() {
         if (confirm('ATENÇÃO: Esta ação irá excluir permanentemente sua conta e todos os dados. Tem certeza?')) {
             if (confirm('Digite "EXCLUIR" para confirmar:') === 'EXCLUIR') {
-                // Remover usuário do localStorage
                 const existingUsers = JSON.parse(localStorage.getItem('registeredUsers') || '{}');
                 delete existingUsers[this.currentUser.email];
                 localStorage.setItem('registeredUsers', JSON.stringify(existingUsers));
@@ -1944,15 +2119,12 @@ class SyntaxLabsApp {
 
     showLoading(message = 'Carregando...') {
         console.log('Loading:', message);
-        // Implementar spinner visual se necessário
     }
 
     hideLoading() {
         console.log('Loading complete');
-        // Ocultar spinner visual se implementado
     }
 
-    // Efeitos Visuais
     createParticles() {
         const particlesContainer = document.querySelector('.tech-bg');
         if (!particlesContainer) return;
@@ -1984,7 +2156,6 @@ class SyntaxLabsApp {
 }
 
 // ===== SISTEMA DE PROGRAMAÇÃO AVANÇADO =====
-// (Mantido igual ao seu código original)
 
 class AdvancedProgrammingSystem {
     constructor(app) {
@@ -2009,7 +2180,6 @@ class AdvancedProgrammingSystem {
     setupEventListeners() {
         console.log('Configurando event listeners do sistema de programação...');
         
-        // Botões de ação
         const runButton = document.getElementById('runButton');
         if (runButton) runButton.addEventListener('click', () => this.runCode());
         
@@ -2031,7 +2201,6 @@ class AdvancedProgrammingSystem {
         const sendAiQuestion = document.getElementById('sendAiQuestion');
         if (sendAiQuestion) sendAiQuestion.addEventListener('click', () => this.sendAIQuestion());
 
-        // Entrada de texto da IA
         const aiQuestion = document.getElementById('aiQuestion');
         if (aiQuestion) {
             aiQuestion.addEventListener('keypress', (e) => {
@@ -2039,7 +2208,6 @@ class AdvancedProgrammingSystem {
             });
         }
 
-        // Monitoramento do editor
         const editor = document.getElementById('advancedCodeEditor');
         if (editor) {
             editor.addEventListener('input', () => {
@@ -2056,7 +2224,6 @@ class AdvancedProgrammingSystem {
             });
         }
 
-        // Filtro de dificuldade
         const difficultyFilter = document.getElementById('difficultyFilter');
         if (difficultyFilter) {
             difficultyFilter.addEventListener('change', (e) => {
@@ -2068,7 +2235,6 @@ class AdvancedProgrammingSystem {
     loadLanguages(user = null) {
         console.log('Carregando linguagens para usuário:', user);
         
-        // Linguagens básicas para usuários não logados
         const basicLanguages = [
             { 
                 name: 'JavaScript', 
@@ -2198,7 +2364,6 @@ public class Main {
             }
         ];
 
-        // Linguagens premium para usuários logados
         const premiumLanguages = [
             ...basicLanguages,
             { 
@@ -2372,44 +2537,12 @@ _start:
         const grid = document.getElementById('languagesGrid');
         
         if (grid) {
-            // Limpar grid e mensagem informativa anterior
             grid.innerHTML = '';
             const existingInfo = document.querySelector('.languages-info');
             if (existingInfo) {
                 existingInfo.remove();
             }
 
-            grid.innerHTML = languages.map(lang => {
-                const isPremium = !user && premiumLanguages.slice(basicLanguages.length).includes(lang);
-                return `
-                    <div class="language-card" data-lang="${lang.name}">
-                        <i class="${lang.icon}"></i>
-                        <h4>${lang.name}</h4>
-                        <p>${lang.description}</p>
-                        <small>Arquivo .${lang.extension}</small>
-                        ${isPremium ? '<div class="premium-badge">PREMIUM</div>' : ''}
-                    </div>
-                `;
-            }).join('');
-
-            // Event listeners para seleção de linguagem
-            document.querySelectorAll('.language-card').forEach(card => {
-                card.addEventListener('click', () => {
-                    const language = card.dataset.lang;
-                    const languageData = languages.find(l => l.name === language);
-                    
-                    // Verificar se é uma linguagem premium para usuário não logado
-                    const isPremiumLanguage = premiumLanguages.slice(basicLanguages.length).includes(languageData);
-                    if (!user && isPremiumLanguage) {
-                        this.showAlert('🔒 Esta linguagem está disponível apenas para usuários cadastrados!', 'warning');
-                        return;
-                    }
-                    
-                    this.selectLanguage(language, languageData);
-                });
-            });
-
-            // Adicionar mensagem informativa apenas se usuário não estiver logado
             if (!user) {
                 const infoMessage = document.createElement('div');
                 infoMessage.className = 'languages-info';
@@ -2425,13 +2558,40 @@ _start:
                 `;
                 grid.parentNode.appendChild(infoMessage);
             }
+
+            grid.innerHTML = languages.map(lang => {
+                const isPremium = !user && premiumLanguages.slice(basicLanguages.length).includes(lang);
+                return `
+                    <div class="language-card" data-lang="${lang.name}">
+                        <i class="${lang.icon}"></i>
+                        <h4>${lang.name}</h4>
+                        <p>${lang.description}</p>
+                        <small>Arquivo .${lang.extension}</small>
+                        ${isPremium ? '<div class="premium-badge">PREMIUM</div>' : ''}
+                    </div>
+                `;
+            }).join('');
+
+            document.querySelectorAll('.language-card').forEach(card => {
+                card.addEventListener('click', () => {
+                    const language = card.dataset.lang;
+                    const languageData = languages.find(l => l.name === language);
+                    
+                    const isPremiumLanguage = premiumLanguages.slice(basicLanguages.length).includes(languageData);
+                    if (!user && isPremiumLanguage) {
+                        this.showAlert('🔒 Esta linguagem está disponível apenas para usuários cadastrados!', 'warning');
+                        return;
+                    }
+                    
+                    this.selectLanguage(language, languageData);
+                });
+            });
         }
     }
 
     selectLanguage(languageName, languageData) {
         this.currentLanguage = languageName;
         
-        // Atualizar UI
         const currentLanguageElement = document.getElementById('currentLanguage');
         if (currentLanguageElement) currentLanguageElement.textContent = languageName;
         
@@ -2441,23 +2601,16 @@ _start:
         const syntaxInfo = document.getElementById('syntaxInfo');
         if (syntaxInfo) syntaxInfo.textContent = `${languageName} • UTF-8`;
         
-        // Carregar código inicial
         const editor = document.getElementById('advancedCodeEditor');
         if (editor && languageData) {
             editor.value = languageData.starterCode;
         }
         
-        // Atualizar números de linha
         this.updateLineNumbers();
         this.loadChallenges(languageName);
         
-        // Configurar controles de rolagem
         this.setupScrollControls();
-        
-        // Configurar detecção de largura do código
         this.setupCodeWidthDetection();
-        
-        // Configurar sincronização de scroll
         this.setupScrollSync();
         
         this.showAlert(`🎉 Ambiente ${languageName} carregado!`, 'success');
@@ -2508,7 +2661,6 @@ _start:
         
         if (ideContent && controlsSidebar && scrollIndicator) {
             ideContent.addEventListener('scroll', () => {
-                // Mostrar controles quando o usuário rolar
                 if (ideContent.scrollTop > 100) {
                     controlsSidebar.classList.add('active');
                     scrollIndicator.classList.add('active');
@@ -2518,7 +2670,6 @@ _start:
                 }
             });
             
-            // Também mostrar controles quando o mouse entrar na área do IDE
             const ideContainer = document.querySelector('.advanced-ide-container');
             if (ideContainer) {
                 ideContainer.addEventListener('mouseenter', () => {
@@ -2526,7 +2677,6 @@ _start:
                 });
                 
                 ideContainer.addEventListener('mouseleave', () => {
-                    // Manter visível apenas se houver scroll
                     if (ideContent.scrollTop <= 100) {
                         controlsSidebar.classList.remove('active');
                     }
@@ -2555,7 +2705,6 @@ _start:
                 return;
             }
 
-            // Criar indicador
             const wideCodeIndicator = document.createElement('div');
             wideCodeIndicator.className = 'wide-code-indicator';
             wideCodeIndicator.textContent = 'CÓDIGO LARGO';
@@ -2575,7 +2724,6 @@ _start:
                 }
             };
             
-            // Configurar event listeners
             editor.addEventListener('input', checkCodeWidth);
             
             this.pasteHandler = () => {
@@ -2585,7 +2733,6 @@ _start:
             
             window.addEventListener('resize', checkCodeWidth);
             
-            // Verificação inicial
             checkCodeWidth();
             
         } catch (error) {
@@ -2846,7 +2993,6 @@ _start:
         }
     }
 
-    // Sistema de IA
     setupAI() {
         this.aiContext = [
             {
@@ -3080,18 +3226,15 @@ console.log("Boa sorte! 🚀");`;
 document.addEventListener('DOMContentLoaded', function() {
     console.log('🚀 Syntax Labs - Inicializando...');
     
-    // Pequeno delay para garantir que tudo carregou
     setTimeout(() => {
-        // Teste do sistema de autenticação
         try {
             const users = JSON.parse(localStorage.getItem('registeredUsers') || '{}');
             const currentUser = JSON.parse(localStorage.getItem('currentUser') || 'null');
             
-            console.log('🔐 Status do Sistema (SEM verificação por e-mail):');
+            console.log('🔐 Status do Sistema:');
             console.log('- Usuários cadastrados:', Object.keys(users).length);
             console.log('- Usuário logado:', currentUser ? currentUser.name : 'Nenhum');
             
-            // Adicionar comandos de debug ao console
             window.debugAuth = {
                 viewUsers: () => {
                     const users = JSON.parse(localStorage.getItem('registeredUsers') || '{}');
@@ -3116,17 +3259,15 @@ document.addEventListener('DOMContentLoaded', function() {
             console.log('⚠️ Sistema de autenticação em inicialização');
         }
         
-        // Inicializar aplicação
         if (typeof SyntaxLabsApp === 'function') {
             window.app = new SyntaxLabsApp();
-            console.log('✅ Syntax Labs carregada! Sistema SEM verificação por e-mail.');
+            console.log('✅ Syntax Labs carregada!');
         } else {
             console.error('❌ Erro: SyntaxLabsApp não encontrada');
         }
     }, 500);
 });
 
-// Função global para abrir chatbot
 window.openChatBot = function() {
     if (window.app && typeof window.app.showAlert === 'function') {
         window.app.showAlert('Chatbot em desenvolvimento! 🤖', 'info');
